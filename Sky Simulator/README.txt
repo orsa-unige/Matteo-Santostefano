@@ -4,7 +4,7 @@ Pupil.py è un programma autosufficiente per osservare l'effetto del defocus,
 lavora con array2d e li elabora matematicamente per ottenere le PSF al variare della distanza dal fuoco.
 Dato l'approccio dovrebbe essere possibile implementare altri tipi di distorsioni ottiche.
 
-OLD:
+NEWS 15/12/2020:
 Il programma principare per ora è Filteretor.py:
 Per ora prende solo l'immagine test.png e ci applica vari filtri salvati in Kernerls.py
 
