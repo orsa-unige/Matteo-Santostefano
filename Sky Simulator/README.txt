@@ -1,28 +1,27 @@
-NEWS 27/12/2020:
-Caricato Pupil.py
-Pupil.py è un programma autosufficiente per osservare l'effetto del defocus, 
-lavora con array2d e li elabora matematicamente per ottenere le PSF al variare della distanza dal fuoco.
-Dato l'approccio dovrebbe essere possibile implementare altri tipi di distorsioni ottiche.
+NEWS 09/01/2021:
+Caricato un nuovo programma 'TheSky.py' che è in grado di gestire immagini simulate in maniera completamente diversa da i precedenti.
+Per questo motivo i file ormai obsoleti sono stati spostati in una nuova cartella.
 
-NEWS 15/12/2020:
-Il programma principare per ora è Filteretor.py:
-Per ora prende solo l'immagine test.png e ci applica vari filtri salvati in Kernerls.py
+'TheSky.py' può sia mostrare che salvare in fits un cielo creato semi-randomicamente da parametri impostati dall'utente:
 
-i filtri sono di 3 tipi:
--da funzione come il filtro gaussiano (k2)
--disegnati a mano come la croce (k1)
--da disegno, come il defocus (k3) o l'astigmatico (k4)
-sarà poi da implementarli tutti da funzione
+una volta fatto partire il programma appariranno le seguenti richieste:
 
-ai filtri si possono passare diversi parametri:
-k1 nessuno
-k2 dimensione, deviazione standard, anisotropia
-k3,k4 dimensione e anisotropia
+Build your Star!
 
+Do you want a In-focus star? (Y/N)
+n                                 #se si dice di si si visualizzerà una 'stella' in-focus e si andrà direttamente alla domanda 'Do you like your model?'
+Do you want a sample star? (Y/N)
+n                                 #se si dice di si si visualizzerà una 'stella'  non in-focus e si andrà direttamente alla domanda 'Do you like your model?'
+How much defocus? 2               #qui vengono richiesti dei parametri numerici (i qui limiti sono ancora da definire) ed infine si visualizzerà la 'stella'
+How much coma? 1                  #generata con essi con un inclinazione standar che poi sarà scelta casualmente nella creazione del cielo
+How much bessel? 3
+How much astigmatism? 2
+The phase between coma and stigmatism? (deg) 45
+Do you like your model? (Y/N)  #se si mette no, si ricomincia da capo
+y
+Bulding your sky, it can take few seconds #il programma gira e crea un cielo con stelle con posizioni e intensità randomiche
 
-NB. se si vuole salvare l'immagine ottenuta non si può salvare direttamente 
-in quanto si possiede un array da normalizzare e convertire in immagine; 
-questo viene fatto da prova.py 
-
-
-
+Do you want do visualize? (Y/N)  #se si dice di sì si visualizzerà in un grafico il cielo creato
+y
+Do you want to save it? (Y/N)    #se si dice di si il cielo verrà salvato come fits
+y
