@@ -1,3 +1,8 @@
+NEWS 05/02/2021:
+'TheSky.py' è ora 'SkyConstructer.py'. La creazione delle stelle viene fatta in maniera matematicamente più pulita e corretta, i dati vengono salvati su un fits con le proprietà della CCD.
+'SkyConstructer.py' lavora in tandem con 'Query.py'. 'Query.py' dato un punto nel cielo (per ora in in coordinate icrs) chiama SIMBAD e trascrive le posizioni e magnitudo delle stelle in una regione dal raggio di 7 arcmin (grandezza massima della CCD), queste info sono poi passate a 'SkyConstructer.py' che le userà per costruire il cielo simulato.
+Infine 'MainSky.py' è solo un codice che permette di scegliere se lavorare in maniera automatica o manuale. Il processo automatizzato richiede solo le coordinate centrali del cielo da simulare (i dati delle distorsioni sono generate randomicamente). Il processo manuale è più lungo ma permette di calibrare il cielo in maniera diretta.
+
 NEWS 09/01/2021:
 Caricato un nuovo programma 'TheSky.py' che è in grado di gestire immagini simulate in maniera completamente diversa da i precedenti.
 Per questo motivo i file ormai obsoleti sono stati spostati in una nuova cartella.
