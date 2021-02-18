@@ -94,7 +94,7 @@ def datum(coordinates, defocus=6, YES= ['Y', 'YES', 'S', 'SI', 'Sì']): #create 
     Dx, Dy = 1024, 1032
     x, y = np.mgrid[0:Dx, 0:Dy]
     data = modellino(0,0,0) (x, y) #inizialize a datum to 0
-    AMP= 700
+    AMP= 0.1
     ph = np.random.randint(0,360) #the initial fase is randomly choosen
 
     p_x,p_y,flux = Q.query(coordinates, filters)
