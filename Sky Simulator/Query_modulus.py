@@ -5,8 +5,13 @@ from astropy import units as u
 import numpy as np
 import json
 
+from Logger import hist
+from astropy.logger import log
+
 
 def Coordinator(c, center, CCD_res):
+    log.info(hist())
+    
     #offset_x = CCD_structure[0]/CCD_structure[2]
     #offset_y = CCD_structure[1]/CCD_structure[2]
     w = wcs.WCS(naxis=2)
@@ -20,6 +25,8 @@ def Coordinator(c, center, CCD_res):
     return x, y
 
 def data_loader(key, photo_filter):
+    log.info(hist())
+    
     f = open("Antola_data.json", "r")
     data = json.load(f)
     key_data = data[key]
@@ -31,6 +38,8 @@ def data_loader(key, photo_filter):
     return datum
 
 def VEGA_to_AB(magnitudo, photo_filter):
+    log.info(hist())
+    
     convertion_table = data_loader("Convertion_table", photo_filter)
     for i in range(len(magnitudo)):
         if magnitudo[i]== 0:
@@ -40,6 +49,8 @@ def VEGA_to_AB(magnitudo, photo_filter):
     return magnitudo
 
 def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
+    log.info(hist())
+    
     extinction_coefficient = data_loader("Extinction_coefficient", photo_filter)
     for i in range(len(magnitudo)):
         if magnitudo[i] == 0:
@@ -49,6 +60,8 @@ def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
     return magnitudo
 
 def magnitudo_to_photons(magnitudo, photo_filter):
+    log.info(hist())
+    
     central_wavelenght = data_loader("Central_wavelenght", photo_filter) #in Armstrong
     number = magnitudo
     for i in range(len(magnitudo)):
@@ -60,6 +73,8 @@ def magnitudo_to_photons(magnitudo, photo_filter):
     return number
 
 def photons_to_electrons(photons, photo_filter):
+    log.info(hist())
+    
     QE = data_loader("Quantum_efficiency", photo_filter) #in Armstrong
     electrons = photons
     for i in range(len(photons)):
@@ -67,6 +82,8 @@ def photons_to_electrons(photons, photo_filter):
     return electrons
 
 def Data_structure():
+    log.info(hist())
+    
     Coord_x = []
     Coord_y = []
     Flux_tot = []
@@ -74,6 +91,8 @@ def Data_structure():
     return data
 
 def radius_sky_portion(CCD_structure):
+    log.info(hist())
+    
     pixel_on_x = CCD_structure[0]/CCD_structure[2]
     pixel_on_y = CCD_structure[1]/CCD_structure[2]
     diagonal_diameter = np.sqrt((pixel_on_x)**2+(pixel_on_y)**2)
@@ -82,6 +101,8 @@ def radius_sky_portion(CCD_structure):
     return (radius/60)*u.deg
 
 def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
+    log.info(hist())
+    
     magnitudo = VEGA_to_AB(magnitudo, photo_filters)
     magnitudo = atmospheric_attenuation(magnitudo, photo_filters, 1)
     photons = magnitudo_to_photons(magnitudo, photo_filters)
@@ -90,6 +111,8 @@ def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
     return tot
     
 def query(coordi, photo_filters, CCD_structure):
+    log.info(hist())
+    
     radius = radius_sky_portion(CCD_structure)
     coordi = coord.SkyCoord(coordi, frame = 'icrs', unit=(u.hourangle, u.deg))
     f =['flux({0})'.format(x) for x in photo_filters]

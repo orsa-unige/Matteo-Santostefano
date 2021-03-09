@@ -6,7 +6,13 @@ import numpy as np
 from scipy import signal
 from astropy.io import fits
 
-def load_measure(): #load the basic data of the telescope
+from Logger import hist
+from astropy.logger import log
+
+def load_measure():
+    '''Load the basic data of the telescope'''
+    log.info(hist())
+    
     f = open("Antola_data.json", "r")
     data = json.load(f)
     Telescope = data['Telescope']
@@ -21,14 +27,20 @@ def load_measure(): #load the basic data of the telescope
     f.close()
     return f_l, ape, obs, wav, C_x, C_y, pix
 
-def simple_point(x, y, amp=5.0, x_0=0, y_0=0): #creates a point in the CCD where will be a star
+def simple_point(x, y, amp=5.0, x_0=0, y_0=0):
+    '''Creates a point in the CCD where will be a star'''
+    log.info(hist())
+    
     KX = x-x_0
     KY = y-y_0
     r=np.sqrt(KX**2+KY**2)
     point = np.piecewise(r, [r, r<2], [0,1])
     return point*amp
 
-def save_fits(data, defocus_distance, center): #save a fits with a simple header
+def save_fits(data, defocus_distance, center):
+    '''Save a fits with a simple header'''
+    log.info(hist())
+    
     hdul = fits.PrimaryHDU(data) #save the file
     hdr = hdul.header
     hdr['RA'] = center[0]
@@ -42,10 +54,15 @@ def save_fits(data, defocus_distance, center): #save a fits with a simple header
 
 
 def main():
-#"07 59 05.8395618539 +15 23 29.240025256"
+    #"07 59 05.8395618539 +15 23 29.240025256"
+    log.info(hist())
+    
     photo_filters = ['U', 'B', 'V', 'R', 'I']
-    defocus_distance = float(input('The defocus distance? (mm)\n')) #mm
-    coordinates = input('Coordinates? \n')
+    default_defocus = 2.0
+    defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
+
+    default_coordinates = "07 59 05.83 +15 23 29.24"
+    coordinates = input(f'Coordinates? Default: {default_coordinates} \n' or default_coordinates)
     #defocus_distance = 0 #mm
     #coordinates = "07 59 05.8395618539 +15 23 29.240025256"
 
