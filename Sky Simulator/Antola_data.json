@@ -1,0 +1,44 @@
+{
+    "Telescope": {
+        "focal_lenght":6400,
+    	"aperture":800,
+	"obstruction":100,
+	"wavelenght":0.0005,
+	"CCD_x":36,
+	"CCD_y":24.7,
+	"pixels":0.009
+    },
+    "CCD": {
+	"CCD_x":36,
+	"CCD_y":24.7,
+	"pixels":0.009
+    },
+    "Convertion_table": {
+	"U":0.79,
+	"B":-0.09,
+	"V":0.02,
+	"R":0.21,
+	"I":0.45
+    },
+    "Extinction_coefficient": {
+	"U":0.6,
+	"B":0.2,
+	"V":0.2,
+	"R":0.1,
+	"I":0.08
+    },
+    "Central_wavelenght": {
+	"U":3600,
+	"B":4200,
+	"V":5500,
+	"R":6400,
+	"I":7900
+    },
+    "Quantum_efficiency": {
+	"U":0.32,
+	"B":0.455,
+	"V":0.432,
+	"R":0.332,
+	"I":0.13
+    }
+}
