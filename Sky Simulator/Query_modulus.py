@@ -9,7 +9,34 @@ from Logger import hist
 from astropy.logger import log
 
 
-def Coordinator(c, center, CCD_res):
+def Coordinator(coord, center, CCD_res):
+    '''
+    The function takes the coordinates of a star and uses the WCS keywords
+    to give back the position on the CCD in pixel
+
+    Parameters
+    ----------
+
+    coord : SkyCoord
+        It is the coordinates of the star already elaborated by astropy
+
+    center : array
+        It must contain the position of the center of the CCD and it is used to obtain
+        the distance of the star from it
+
+    CCD_res : float
+        It is the resolution of the CCD in arcsec/pixel
+
+    Outputs
+    -------
+
+    x : float
+        It is the position of the star on the grid of the CCD along the axis x
+
+    y : float
+        It is the position of the star on the grid of the CCD along the axis y
+    '''
+
     log.info(hist())
     
     #offset_x = CCD_structure[0]/CCD_structure[2]
@@ -18,13 +45,31 @@ def Coordinator(c, center, CCD_res):
     w.wcs.crpix = [1, 1]
     w.wcs.crval = [center[0], center[1]]
     w.wcs.ctype = ["RA", "DEC"]    
-    x,y = wcs.utils.skycoord_to_pixel(c, w)
+    x,y = wcs.utils.skycoord_to_pixel(coord, w)
     x = (x*3600)/CCD_res #+ offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
     y = (y*3600)/CCD_res #+ offset_y/2
 
     return x, y
 
 def data_loader(key, photo_filter):
+    '''
+    This function reads and extracts the information from a JSON
+
+    Parameters
+    ----------
+
+    key : string
+        This is the key of the search on the JSON
+
+    photo_filter : list
+        An array with the used filters to select the right datum in the right order
+
+    Output
+    ------
+
+    datum : list, array
+        This object contains the information required
+    '''
     log.info(hist())
     
     f = open("Antola_data.json", "r")
@@ -38,6 +83,25 @@ def data_loader(key, photo_filter):
     return datum
 
 def VEGA_to_AB(magnitudo, photo_filter):
+    '''
+    This function takes the magnitudo of a star in the VEGA system and converts it in the AB system.
+    It download the conversion table calling data_loader
+
+    Parameters
+    ----------
+
+    magnitudo : array (float elements)
+        An element of magnitudo is the magnitudo of a star in a specific range (photo_filter)
+
+    photo_filter : list (string elements)
+        It is a list where a element is a string that identifies a filter, e.g. "U","R","I"
+
+    Output
+    ------
+
+    magnitudo : array
+        The array contains the elements converted        
+    '''
     log.info(hist())
     
     convertion_table = data_loader("Convertion_table", photo_filter)
@@ -49,6 +113,28 @@ def VEGA_to_AB(magnitudo, photo_filter):
     return magnitudo
 
 def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
+    '''
+    This function takes the magnitudo of a star and gives back the same magnitudo attenuated by the atmosphere.
+    It download the extinction coefficients calling data_loader
+
+    Parameters
+    ----------
+
+    magnitudo : array (float elements)
+        An element of magnitudo is the magnitudo of a star in a specific range (photo_filter)
+
+    photo_filter : list (string elements)
+        It is a list where a element is a string that identifies a filter, e.g. "U","R","I"
+
+    AirMass : float
+        The AirMass provide the thickness of the atmosphere crossed by the light 
+
+    Output
+    ------
+
+    magnitudo : array
+        The array contains the elements attenuated        
+    '''
     log.info(hist())
     
     extinction_coefficient = data_loader("Extinction_coefficient", photo_filter)
@@ -60,6 +146,25 @@ def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
     return magnitudo
 
 def magnitudo_to_photons(magnitudo, photo_filter):
+    '''
+    This function convertes the magnitudo of a star in number of photons/second.
+    It download informations calling data_loader
+
+    Parameters
+    ----------
+
+    magnitudo : array (float elements)
+        An element of magnitudo is the magnitudo of a star in a specific range (photo_filter)
+
+    photo_filter : list (string elements)
+        It is a list where a element is a string that identifies a filter, e.g. "U","R","I"
+
+    Output
+    ------
+
+    photons : array
+        The elements of the array are the number of photons for a specific range        
+    '''
     log.info(hist())
     
     central_wavelenght = data_loader("Central_wavelenght", photo_filter) #in Armstrong
@@ -73,6 +178,24 @@ def magnitudo_to_photons(magnitudo, photo_filter):
     return number
 
 def photons_to_electrons(photons, photo_filter):
+    '''
+    This function takes the number of photons/sec and converts them in number of electron/sec on the CCD.
+    It calls data_loader to download the quantum efficiency of the CCD
+
+    Parameters
+    ----------
+
+    photons : array
+        The elements of the array are the number of photons for a specific range
+
+    photo_filter : list (string elements)
+        It is a list where a element is a string that identifies a filter, e.g. "U","R","I"
+
+    Output
+
+    electron : array
+        The elements of the array are the number of electrons for a specific range 
+    '''
     log.info(hist())
     
     QE = data_loader("Quantum_efficiency", photo_filter) #in Armstrong
@@ -82,6 +205,9 @@ def photons_to_electrons(photons, photo_filter):
     return electrons
 
 def Data_structure():
+    '''
+    This function simply creates the data structure used in query
+    '''
     log.info(hist())
     
     Coord_x = []
@@ -91,6 +217,23 @@ def Data_structure():
     return data
 
 def radius_sky_portion(CCD_structure):
+    '''
+    This function uses the information on the CCD to estimate the radius of the portion of the sky visualized
+
+    Parameters
+    ----------
+
+    CCD_structure : array (float elements)
+        This object contains the information about the measure of the CCD
+        [0] : the length of the CCD on the x axis in mm
+        [1] : the length of the CCD on the y axis in mm
+        [2] : the length of a single pixel in mm
+
+    Output
+    ------
+     radius : astropy.units.quantity.Quantity
+         it is the radius in an astropy undestandable format
+    '''
     log.info(hist())
     
     pixel_on_x = CCD_structure[0]/CCD_structure[2]
@@ -98,9 +241,35 @@ def radius_sky_portion(CCD_structure):
     diagonal_diameter = np.sqrt((pixel_on_x)**2+(pixel_on_y)**2)
     radius_on_pixel = diagonal_diameter/2
     radius = radius_on_pixel*CCD_structure[3]/60
-    return (radius/60)*u.deg
+    radius = (radius/60)*u.deg
+    return radius
 
 def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
+    '''
+    This functions calls VEGA_to_AB, atmospheric_attenuation, magnitudo_to_photons, photons_to_electrons
+    to obtain the total electrons generated in a CCD by the light of a star
+    
+    Parameters
+    ----------
+
+    magnitudo : array (float elements)
+        An element of magnitudo is the magnitudo of a star in a specific range (photo_filter)
+
+    photo_filter : list (string elements)
+        It is a list where a element is a string that identifies a filter, e.g. "U","R","I"
+
+    AirMass : float
+        The AirMass provide the thickness of the atmosphere crossed by the light
+
+    exposure_time : int
+        It is the exposure time used to obtain the image, it is in seconds
+
+    Output
+    ------
+
+    tot : float
+        It is the total number of electrons generated by the star on the CCD
+    '''
     log.info(hist())
     
     magnitudo = VEGA_to_AB(magnitudo, photo_filters)
@@ -111,9 +280,44 @@ def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
     return tot
     
 def query(coordi, photo_filters, CCD_structure, exposure_time):
+    '''
+    This funtion uses all the functions above to query Simbad and extract the information about the stars in a
+    specific area of the sky
+
+    Parameters
+    ----------
+
+    coordi : string
+        It contains the center of the area of interest
+
+    photo_filter : list (string elements)
+        It is a list where a element is a string that identifies a filter, e.g. "U","R","I"
+
+    CCD_structure : array (float elements)
+        This object contains the information about the measure of the CCD
+        [0] : the length of the CCD on the x axis in mm
+        [1] : the length of the CCD on the y axis in mm
+        [2] : the length of a single pixel in mm
+
+    exposure_time : int
+        It is the exposure time used to obtain the image, it is in seconds
+
+    Outputs
+    -------
+
+    data : list
+        It is a list of array that contains
+         [0] : array, the position of the stars along the x axis
+         [1] : array, the position of the stars along the y axis
+         [2] : array, the number of electrons generates by the stars on the CCD
+
+    center : list
+        It contains the center of the sky portion in "RA" and "DEC"
+    '''
     log.info(hist())
     
     radius = radius_sky_portion(CCD_structure)
+    print(type(radius))
     coordi = coord.SkyCoord(coordi, frame = 'icrs', unit=(u.hourangle, u.deg))
     f =['flux({0})'.format(x) for x in photo_filters]
     [Simbad.add_votable_fields(g) for g in f]
@@ -127,14 +331,13 @@ def query(coordi, photo_filters, CCD_structure, exposure_time):
 
     Stars_number = len(result_table)
     len_filter_list = len(photo_filters)
-    #exposure_time = 60
     AirMass = 1
     
     for i in range (Stars_number):
         row = result_table[i]
         tot = 0
         magnitudo = []
-        for j in range(11, 11+len_filter_list):  #sum the fluxies
+        for j in range(11, 11+len_filter_list):  #controll
             if row[j] is np.ma.masked:
                 row[j] = 0
             magnitudo.append(row[j])
