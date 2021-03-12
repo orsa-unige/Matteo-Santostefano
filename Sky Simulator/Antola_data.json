@@ -6,14 +6,12 @@
 	"wavelenght":0.0005,
 	"CCD_x":36,
 	"CCD_y":24.7,
-	"pixels":0.009,
-        "comment": "Units are expressed in mm."
+	"pixels":0.009
     },
     "CCD": {
 	"CCD_x":36,
 	"CCD_y":24.7,
 	"pixels":0.009
-        "comment": "Units are expressed in mm."
     },
     "Convertion_table": {
 	"U":0.79,

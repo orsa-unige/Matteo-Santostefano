@@ -110,7 +110,7 @@ def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
     tot = sum(electrons)*exposure_time
     return tot
     
-def query(coordi, photo_filters, CCD_structure):
+def query(coordi, photo_filters, CCD_structure, exposure_time):
     log.info(hist())
     
     radius = radius_sky_portion(CCD_structure)
@@ -127,7 +127,7 @@ def query(coordi, photo_filters, CCD_structure):
 
     Stars_number = len(result_table)
     len_filter_list = len(photo_filters)
-    exposure_time = 1
+    #exposure_time = 60
     AirMass = 1
     
     for i in range (Stars_number):
