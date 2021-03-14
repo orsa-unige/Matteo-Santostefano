@@ -1,5 +1,5 @@
-import Query_modulus as Qm
-import Telescope_modulus as Tm
+import query_mod as Qm
+import telescope_mod as Tm
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +12,31 @@ from astropy.logger import log
 
 def load_measure():
     '''
-    Load the basic data of the telescope and the CCD
+    Load the basic data of the telescope and the CCD from a JSON file
+
+    Outputs
+    -------
+
+    f_l : int
+        It is the focal length of the telescope in mm
+
+    ape : int
+        It is the aperture of the telescope in mm
+
+    obs : int
+        It is the central obstruction of the telescope in mm
+
+    wav : float
+        It is the central wavelength of the sensible spectrum of the CCD in mm
+
+    C_x : float
+        It is the length of the CCD along the x axis in mm
+
+    C_y : float
+        It is the length of the CCD along the y axis in mm
+
+    pix : float
+        It is the lenght of a single pixel in mm
     '''
     log.info(hist())
     
@@ -62,17 +86,40 @@ def save_fits(data, defocus_distance, center):
 
 
 def main():
+    '''
+    This is the main function of the system, it coordinates the Telescope_mod, the ccd_mod and the Query_mod.
+    First it calls laod_measure to obtain some data for Telescope_mod and Query_mod, the uses Telescope_mod
+    with some additional parameters in input to create the PSF with the right measure for the telescope and the CCD.
+    
+    At this point the function calls again the Telescope_mod to creats an empty image of the CCD, and the Query_mod
+    to obtain information about the position and the flux of the stars in a specific reagion of the sky,
+    the center of that is an imput from the operator.
+
+    The function uses the information of Query_mod to "light_up" some pixel on the CCD's image in position where shoud be the stars
+    and then convolve this updated CCD with the calculated PSF from Telescope_mod obtainig the CCD with the stars drawn.
+
+    If the value of realistic is True, the main calls the ccd_mod to creates the bias frame, the dark frame, the read out noise,
+    the backround noise and the flat frame and then combines all the frames to obtain a more realistic image on the CCD.    
+    '''
     log.info(hist())
     binning = 2
     photo_filters = ['U', 'B', 'V', 'R', 'I']
-    gain = 3.0
+    gain = 2.0
     exposure_time = 600 #second
     default_defocus = 0.9
     default_coordinates = "07 59 05.83 +15 23 29.24"
+
+    #Standard data for the noise formation 
     realistic = True
+    dark = 0.1
+    sky_counts = 20
+    bias_level = 1100
+    read_noise_electrons = 5
 
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
     coordinates = input(f'Coordinates? Default: {default_coordinates} \n' or default_coordinates)
+
+    gain = gain**binning
 
     f_l, ape, obs, wav, C_x, C_y, pix = load_measure()  #load the measure
     pix = pix * binning
@@ -92,10 +139,7 @@ def main():
     CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
 
     if realistic: 
-        dark = 0.1
-        sky_counts = 20
-        bias_level = 1100
-        read_noise_electrons = 5
+
 
         flat = ccd_mod.sensitivity_variations(CCD, vignetting=True, dust=False)
         bias_only = ccd_mod.bias(CCD, bias_level, realistic=True)
