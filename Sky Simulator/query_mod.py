@@ -8,7 +8,10 @@ import json
 from Logger import hist
 from astropy.logger import log
 
+with open("Antola_data.json") as f:
+    DATA = json.load(f)
 
+    
 def Coordinator(coord, center, CCD_res):
     '''
     The function takes the coordinates of a star and uses the WCS keywords
@@ -51,36 +54,39 @@ def Coordinator(coord, center, CCD_res):
 
     return x, y
 
-def data_loader(key, photo_filter):
-    '''
-    This function reads and extracts the information from a JSON
 
-    Parameters
-    ----------
+# def data_loader(key, photo_filter):
+#     '''
+#     This function reads and extracts the information from a JSON
 
-    key : string
-        This is the key of the search on the JSON
+#     Parameters
+#     ----------
 
-    photo_filter : list
-        An array with the used filters to select the right datum in the right order
+#     key : string
+#         This is the key of the search on the JSON
 
-    Output
-    ------
+#     photo_filter : list
+#         An array with the used filters to select the right datum in the right order
 
-    datum : list, array
-        This object contains the information required
-    '''
-    log.info(hist())
-    
-    f = open("Antola_data.json", "r")
-    data = json.load(f)
-    key_data = data[key]
-    datum = []
-    for i in photo_filter:
-          datum.append(key_data[str(i)])
+#     Output
+#     ------
 
-    f.close()
-    return datum
+#     datum : list, array
+#         This object contains the information required
+#     '''
+#     log.info(hist())
+
+#     #f = open("Antola_data.json", "r")
+#     with open("Antola_data.json") as f:
+#         data = json.load(f)
+#         key_data = data[key]
+#         datum = []
+#         for i in photo_filter:
+#             datum.append(key_data[str(i)])
+
+#     #f.close()
+#     return datum
+
 
 def VEGA_to_AB(magnitudo, photo_filter):
     '''
@@ -102,15 +108,18 @@ def VEGA_to_AB(magnitudo, photo_filter):
     magnitudo : array
         The array contains the elements converted        
     '''
-    log.info(hist())
-    
-    convertion_table = data_loader("Convertion_table", photo_filter)
+
+    log.debug(hist(photo_filter))
+
+    sub = DATA["Convertion_table"]
+    convertion_table = [sub[k] for k in photo_filter if k in sub]
     for i in range(len(magnitudo)):
         if magnitudo[i]== 0:
             magnitudo[i]=0
         else:
             magnitudo[i] = magnitudo[i] - convertion_table[i]
     return magnitudo
+
 
 def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
     '''
@@ -135,15 +144,18 @@ def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
     magnitudo : array
         The array contains the elements attenuated        
     '''
-    log.info(hist())
+    log.debug(hist())
+
+    sub = DATA["Extinction_coefficient"]
+    extinction_coefficient = [sub[k] for k in photo_filter if k in sub]
     
-    extinction_coefficient = data_loader("Extinction_coefficient", photo_filter)
     for i in range(len(magnitudo)):
         if magnitudo[i] == 0:
             magnitudo[i] = 0
         else:
             magnitudo[i] = magnitudo[i]-AirMass*extinction_coefficient[i]
     return magnitudo
+
 
 def magnitudo_to_photons(magnitudo, photo_filter):
     '''
@@ -165,9 +177,11 @@ def magnitudo_to_photons(magnitudo, photo_filter):
     photons : array
         The elements of the array are the number of photons for a specific range        
     '''
-    log.info(hist())
+    log.debug(hist())
     
-    central_wavelenght = data_loader("Central_wavelenght", photo_filter) #in Armstrong
+    sub = DATA["Central_wavelenght"]
+    central_wavelenght = [sub[k] for k in photo_filter if k in sub]
+    
     number = magnitudo
     for i in range(len(magnitudo)):
         if magnitudo[i] == 0:
@@ -176,6 +190,7 @@ def magnitudo_to_photons(magnitudo, photo_filter):
             exp = 6.74-0.4*magnitudo[i]
             number[i] = (10**exp)/(central_wavelenght[i])
     return number
+
 
 def photons_to_electrons(photons, photo_filter):
     '''
@@ -196,25 +211,30 @@ def photons_to_electrons(photons, photo_filter):
     electron : array
         The elements of the array are the number of electrons for a specific range 
     '''
-    log.info(hist())
+    log.debug(hist())
+
+    sub = DATA["Quantum_efficiency"]
+    quantum_efficiency = [sub[k] for k in photo_filter if k in sub]
     
-    QE = data_loader("Quantum_efficiency", photo_filter) #in Armstrong
     electrons = photons
     for i in range(len(photons)):
-        electrons[i] = photons[i]*QE[i]
+        electrons[i] = photons[i]*quantum_efficiency[i]
+
     return electrons
+
 
 def Data_structure():
     '''
     This function simply creates the data structure used in query
     '''
-    log.info(hist())
+    log.debug(hist())
     
     Coord_x = []
     Coord_y = []
     Flux_tot = []
     data = [Coord_x, Coord_y, Flux_tot]
     return data
+
 
 def radius_sky_portion(CCD_structure):
     '''
@@ -234,7 +254,7 @@ def radius_sky_portion(CCD_structure):
      radius : astropy.units.quantity.Quantity
          it is the radius in an astropy undestandable format
     '''
-    log.info(hist())
+    log.debug(hist())
     
     pixel_on_x = CCD_structure[0]/CCD_structure[2]
     pixel_on_y = CCD_structure[1]/CCD_structure[2]
@@ -243,6 +263,7 @@ def radius_sky_portion(CCD_structure):
     radius = radius_on_pixel*CCD_structure[3]/60
     radius = (radius/60)*u.deg
     return radius
+
 
 def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
     '''
@@ -270,7 +291,7 @@ def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
     tot : float
         It is the total number of electrons generated by the star on the CCD
     '''
-    log.info(hist())
+    log.debug(hist())
     
     magnitudo = VEGA_to_AB(magnitudo, photo_filters)
     magnitudo = atmospheric_attenuation(magnitudo, photo_filters, 1)
@@ -278,7 +299,8 @@ def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time):
     electrons = photons_to_electrons(photons, photo_filters)
     tot = sum(electrons)*exposure_time
     return tot
-    
+
+
 def query(coordi, photo_filters, CCD_structure, exposure_time):
     '''
     This funtion uses all the functions above to query Simbad and extract the information about the stars in a
@@ -332,7 +354,10 @@ def query(coordi, photo_filters, CCD_structure, exposure_time):
     len_filter_list = len(photo_filters)
     AirMass = 1
     
-    for i in range (Stars_number):
+    log.info(hist(f"Creating {Stars_number} stars:"))
+    for i in range(Stars_number):
+
+        log.info(f"Star n° {i+1}/{Stars_number}")
         row = result_table[i]
         tot = 0
         magnitudo = []

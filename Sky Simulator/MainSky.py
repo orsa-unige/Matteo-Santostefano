@@ -75,15 +75,15 @@ def save_fits(data, defocus_distance, center):
     
     hdul = fits.PrimaryHDU(data) #save the file
     hdr = hdul.header
-    hdr['RA'] = center[0]
-    hdr['DEC'] = center[1]
+    hdr['RA'] = (center[0], "Right Ascension in decimal hours" )
+    hdr['DEC'] = (center[1], "Declination in decimal degrees")
     hdr['IMGTYPE'] = 'object'
     hdr['IMAGETYP'] = 'object'
     hdr['BZERO'] = 32768
-    hdr['DEFOCUS'] = defocus_distance
+    hdr['DEFOCUS'] = (defocus_distance, "[mm] Distance from focal plane")
     hdul.scale('int16', bzero=32768)
     hdul.writeto(f'try.fits', overwrite = True)
-
+ 
 
 def main():
     '''
@@ -106,7 +106,7 @@ def main():
     photo_filters = ['U', 'B', 'V', 'R', 'I']
     gain = 2.0
     exposure_time = 600 #second
-    default_defocus = 0.9
+    default_defocus = 0.9 #mm
     default_coordinates = "07 59 05.83 +15 23 29.24"
 
     #Standard data for the noise formation 
@@ -128,7 +128,8 @@ def main():
     CCD_sample = Tm.telescope_on_CCD(CCD_structure[3], f_l, ape, obs, defocus_distance, wav, True, False) #generates the sample of a star with the right measure
     CCD, x, y = Tm.physical_CCD(CCD_structure) #generate the CCD
 
-    sky, center = Qm.query(coordinates, photo_filters, CCD_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header 
+    sky, center = Qm.query(coordinates, photo_filters, CCD_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
+
     p_x = sky[0]
     p_y = sky[1] 
     flux = sky[2]
