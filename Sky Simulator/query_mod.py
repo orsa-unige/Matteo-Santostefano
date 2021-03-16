@@ -12,7 +12,7 @@ with open("Antola_data.json") as f:
     DATA = json.load(f)
 
     
-def Coordinator(coord, center, CCD_res):
+def Coordinator(coord, center, CCD_structure):
     '''
     The function takes the coordinates of a star and uses the WCS keywords
     to give back the position on the CCD in pixel
@@ -42,17 +42,17 @@ def Coordinator(coord, center, CCD_res):
 
     log.info(hist())
     
-    #offset_x = CCD_structure[0]/CCD_structure[2]
-    #offset_y = CCD_structure[1]/CCD_structure[2]
+    offset_x = CCD_structure[0]/CCD_structure[2]
+    offset_y = CCD_structure[1]/CCD_structure[2]
     w = wcs.WCS(naxis=2)
     w.wcs.crpix = [1, 1]
     w.wcs.crval = [center[0], center[1]]
     w.wcs.ctype = ["RA", "DEC"]    
     x,y = wcs.utils.skycoord_to_pixel(coord, w)
-    x = (x*3600)/CCD_res #+ offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
-    y = (y*3600)/CCD_res #+ offset_y/2
+    x = ((x*3600)/CCD_structure[3]) + offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
+    y = ((y*3600)/CCD_structure[3]) + offset_y/2
 
-    return x, y
+    return y, x
 
 
 # def data_loader(key, photo_filter):
@@ -370,7 +370,7 @@ def query(coordi, photo_filters, CCD_structure, exposure_time):
     
         if tot != 0: #if total flux is 0 the object is not passed
             c = coord.SkyCoord(row[1], row[2], frame = 'icrs', unit=(u.hourangle, u.deg))##change here
-            x, y = Coordinator(c, center, CCD_structure[3])
+            x, y = Coordinator(c, center, CCD_structure)
             data[0].append(x)
             data[1].append(y)
             data[2].append(tot)

@@ -88,7 +88,7 @@ def save_fits(data, defocus_distance, center):
 def main():
     '''
     This is the main function of the system, it coordinates the Telescope_mod, the ccd_mod and the Query_mod.
-    First it calls laod_measure to obtain some data for Telescope_mod and Query_mod, the uses Telescope_mod
+    First it calls load_measure to obtain some data for Telescope_mod and Query_mod, the uses Telescope_mod
     with some additional parameters in input to create the PSF with the right measure for the telescope and the CCD.
     
     At this point the function calls again the Telescope_mod to creats an empty image of the CCD, and the Query_mod
@@ -125,9 +125,9 @@ def main():
     pix = pix * binning
     C_r = Tm.plate_scale(pix, f_l)  #calculate the resolution of the CCD arcsec/pixel
     CCD_structure = (C_x, C_y, pix, C_r) #put the information of the CCD in a array
-    CCD_sample = Tm.telescope_on_CCD(CCD_structure[3], f_l, ape, obs, defocus_distance, wav, True, False) #generates the sample of a star with the right measure
+    CCD_sample = Tm.telescope_on_CCD(CCD_structure[3], f_l, ape, obs, defocus_distance, wav, True, True) #generates the sample of a star with the right measure
     CCD, x, y = Tm.physical_CCD(CCD_structure) #generate the CCD
-
+    size = CCD.shape
     sky, center = Qm.query(coordinates, photo_filters, CCD_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
 
     p_x = sky[0]
@@ -135,8 +135,10 @@ def main():
     flux = sky[2]
 
     for i in range(len(p_x)):
-        CCD[int(p_x[i]), int(p_y[i])] = flux[i]*gain #bind the multiplier to the gain
-
+        if p_x[i] >=0 and p_x[i] <=size[0]:
+            if p_y[i] >=0 and p_y[i] <=size[1]:
+                CCD[int(p_x[i]), int(p_y[i])] = flux[i]*gain #bind the multiplier to the gain
+                
     CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
 
     if realistic: 

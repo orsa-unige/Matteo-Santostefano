@@ -190,7 +190,6 @@ def telescope(focal_lenght, aperture, obstruction, trellis=True):
 
     x,y = np.mgrid[-aperture:aperture, -aperture:aperture] # creates the 2D grid for the 2D function *4
     r = np.sqrt(x**2+y**2)
-    print(type(r))
     pupil = np.piecewise(r, [r < aperture/2, r > aperture/2, r < obstruction/2], [1, 0, 0]) #creates the aperture
     if trellis:
         structure_x = np.piecewise(x, [x, x>5, x<-5], [0,1,1]) #creates the structure that keep the obstruction
@@ -276,7 +275,7 @@ def sky_background_aperture(focal_lenght, aperture, obstruction, trellis=True, a
 
         for i in range(modes-1):
             a = np.random.random()
-            zernike += (a/2)*zer[i]
+            zernike += (a/5)*zer[i]
 
         phase = phase_aberration(aperture, scale, D, r0, L0, pupil)
         kernel = pupil * zernike
@@ -343,7 +342,7 @@ def image_processing(image, units, aperture):
     '''
     log.info(hist())
         
-    zoom = (aperture-8, aperture+8) #*4
+    zoom = (aperture-16, aperture+16) #*4
     image = image[zoom[0]:zoom[1], zoom[0]:zoom[1]]  #takes only the good part
     image = np.repeat(np.repeat(image,units, axis=0), units, axis=1) #Strech the image to fit the CCD scale
     image = image**2  #the intensity is the amplitude squared
