@@ -117,7 +117,7 @@ def main():
     read_noise_electrons = 5
 
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
-    coordinates = input(f'Coordinates? Default: {default_coordinates} \n' or default_coordinates)
+    coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
 
     gain = gain**binning
 
