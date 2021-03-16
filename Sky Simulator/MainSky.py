@@ -10,6 +10,10 @@ import ccd_mod
 from Logger import hist
 from astropy.logger import log
 
+"""
+Prova push
+"""
+
 def load_measure():
     '''
     Load the basic data of the telescope and the CCD from a JSON file
