@@ -10,9 +10,6 @@ import ccd_mod
 from Logger import hist
 from astropy.logger import log
 
-"""
-Prova push
-"""
 
 def load_measure():
     '''
