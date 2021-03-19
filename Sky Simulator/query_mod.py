@@ -115,7 +115,7 @@ def VEGA_to_AB(magnitudo, photo_filter):
     convertion_table = [sub[k] for k in photo_filter if k in sub]
     for i in range(len(magnitudo)):
         if magnitudo[i]== 0:
-            magnitudo[i]=0
+            magnitudo[i]= 40
         else:
             magnitudo[i] = magnitudo[i] - convertion_table[i]
     return magnitudo
@@ -188,7 +188,7 @@ def magnitudo_to_photons(magnitudo, photo_filter):
             number[i] = 0
         else:
             exp = 6.74-0.4*magnitudo[i]
-            number[i] = (10**exp)/(central_wavelenght[i])
+            number[i] = (10**exp)#/(central_wavelenght[i])
     return number
 
 

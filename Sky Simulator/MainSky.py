@@ -86,6 +86,7 @@ def save_fits(data, defocus_distance, center):
     hdul.writeto(f'try.fits', overwrite = True)
  
 
+    
 def main():
     '''
     This is the main function of the system, it coordinates the Telescope_mod, the ccd_mod and the Query_mod.
@@ -105,28 +106,28 @@ def main():
     log.info(hist())
     binning = 2
     photo_filters = ['U', 'B', 'V', 'R', 'I']
+    # photo_filters = ['R']  TO CALIBRATE ON JOHNSON SYSTEM
     gain = 2.0
-    exposure_time = 600 #second
+    exposure_time = 120 #second
     default_defocus = 0.9 #mm
     default_coordinates = "07 59 05.83 +15 23 29.24"
 
     #Standard data for the noise formation 
     realistic = True
-    dark = 0.1
-    sky_counts = 20
-    bias_level = 1100
-    read_noise_electrons = 5
+    dark = 1.04
+    sky_counts = 40
+    bias_level = 2200
+    read_noise_electrons = 12
 
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
     coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
 
-    gain = gain**binning
 
     f_l, ape, obs, wav, C_x, C_y, pix = load_measure()  #load the measure
     pix = pix * binning
     C_r = Tm.plate_scale(pix, f_l)  #calculate the resolution of the CCD arcsec/pixel
     CCD_structure = (C_x, C_y, pix, C_r) #put the information of the CCD in a array
-    CCD_sample = Tm.telescope_on_CCD(CCD_structure[3], f_l, ape, obs, defocus_distance, wav, True, True) #generates the sample of a star with the right measure
+    CCD_sample = Tm.telescope_on_CCD(CCD_structure[3], f_l, ape, obs, defocus_distance, wav, True, False) #generates the sample of a star with the right measure
     CCD, x, y = Tm.physical_CCD(CCD_structure) #generate the CCD
     size = CCD.shape
     sky, center = Qm.query(coordinates, photo_filters, CCD_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
@@ -134,12 +135,13 @@ def main():
     p_x = sky[0]
     p_y = sky[1] 
     flux = sky[2]
-
+    photons_collection_area = (np.pi/400)*(ape**2-obs**2)
     for i in range(len(p_x)):
         if p_x[i] >=0 and p_x[i] <=size[0]:
             if p_y[i] >=0 and p_y[i] <=size[1]:
-                CCD[int(p_x[i]), int(p_y[i])] = flux[i]*gain #bind the multiplier to the gain
-                
+                CCD[int(p_x[i]), int(p_y[i])] = (flux[i]*photons_collection_area*gain)*(binning**2)
+                #the flux is in ph cm^-2 so it has to be multiplied for the effective area of the aperure in cm^2
+        
     CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
 
     if realistic: 

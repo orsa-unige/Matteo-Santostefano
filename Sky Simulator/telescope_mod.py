@@ -188,7 +188,7 @@ def telescope(focal_lenght, aperture, obstruction, trellis=True):
     '''
     log.info(hist())
 
-    x,y = np.mgrid[-aperture:aperture, -aperture:aperture] # creates the 2D grid for the 2D function *4
+    x,y = np.mgrid[-aperture*2:aperture*2, -aperture*2:aperture*2] # creates the 2D grid for the 2D function *4
     r = np.sqrt(x**2+y**2)
     pupil = np.piecewise(r, [r < aperture/2, r > aperture/2, r < obstruction/2], [1, 0, 0]) #creates the aperture
     if trellis:
@@ -277,10 +277,10 @@ def sky_background_aperture(focal_lenght, aperture, obstruction, trellis=True, a
             a = np.random.random()
             zernike += (a/5)*zer[i]
 
-        phase = phase_aberration(aperture, scale, D, r0, L0, pupil)
+        #phase = phase_aberration(aperture, scale, D, r0, L0, pupil) #Small aperture, long exposure, the kolmogorov turbulance on small scale are no
         kernel = pupil * zernike
-        phase = np.exp(1j*phase*0.01+0j)
-        pupil = kernel*phase
+        #phase = np.exp(1j*phase*0.01+0j)
+        pupil = pupil * np.exp(1j*kernel+0j)
     return pupil, r
 
 def defocus(pupil, defocus_distance, r, wavelenght):
@@ -341,12 +341,14 @@ def image_processing(image, units, aperture):
         The image cleaned with only the good parts and with the right measure
     '''
     log.info(hist())
-        
-    zoom = (aperture-16, aperture+16) #*4
+    image = image/(np.sum(image)) #normalize   
+    zoom = (aperture*2-40, aperture*2+40) #*4
     image = image[zoom[0]:zoom[1], zoom[0]:zoom[1]]  #takes only the good part
     image = np.repeat(np.repeat(image,units, axis=0), units, axis=1) #Strech the image to fit the CCD scale
+    #image = image/(units**2) #re-normalize
     image = image**2  #the intensity is the amplitude squared
-    image = image/(np.max(image))#TODO change to an integral normalization
+    #image = image/(np.max(image))#TODO change to an integral normalization
+    #image = image/(np.sum(image))
     return np.abs(image)
 
 def telescope_on_CCD(CCD_resolution, focal_lenght, aperture, obstruction, defocus_distance, wavelenght, trellis=True, atmosphere=False):
