@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import fft, signal
+from scipy import fft, signal, ndimage
 from aotools import zernikeArray as ZA
 from aotools.turbulence.infinitephasescreen import PhaseScreenKolmogorov
 
@@ -340,15 +340,16 @@ def image_processing(image, units, aperture):
     np.abs(image) : numpy ndarray
         The image cleaned with only the good parts and with the right measure
     '''
+
     log.info(hist())
     image = image/(np.sum(image)) #normalize   
     zoom = (aperture*2-40, aperture*2+40) #*4
     image = image[zoom[0]:zoom[1], zoom[0]:zoom[1]]  #takes only the good part
     image = np.repeat(np.repeat(image,units, axis=0), units, axis=1) #Strech the image to fit the CCD scale
-    #image = image/(units**2) #re-normalize
-    image = image**2  #the intensity is the amplitude squared
-    #image = image/(np.max(image))#TODO change to an integral normalization
-    #image = image/(np.sum(image))
+    image = image**2  #the intensity is the amplitude squared)
+    image = ndimage.gaussian_filter(image, sigma=1) #smooth the image
+    plt.imshow(image)
+    plt.show()  
     return np.abs(image)
 
 def telescope_on_CCD(CCD_resolution, focal_lenght, aperture, obstruction, defocus_distance, wavelenght, trellis=True, atmosphere=False):
