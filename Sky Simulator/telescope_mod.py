@@ -279,7 +279,6 @@ def sky_background_aperture(focal_lenght, aperture, obstruction, trellis=True, a
 
         #phase = phase_aberration(aperture, scale, D, r0, L0, pupil) #Small aperture, long exposure, the kolmogorov turbulance on small scale are no
         kernel = pupil * zernike
-        #phase = np.exp(1j*phase*0.01+0j)
         pupil = pupil * np.exp(1j*kernel+0j)
     return pupil, r
 
@@ -348,8 +347,7 @@ def image_processing(image, units, aperture):
     image = np.repeat(np.repeat(image,units, axis=0), units, axis=1) #Strech the image to fit the CCD scale
     image = image**2  #the intensity is the amplitude squared)
     image = ndimage.gaussian_filter(image, sigma=1) #smooth the image
-    plt.imshow(image)
-    plt.show()  
+
     return np.abs(image)
 
 def telescope_on_CCD(CCD_resolution, focal_lenght, aperture, obstruction, defocus_distance, wavelenght, trellis=True, atmosphere=False):
