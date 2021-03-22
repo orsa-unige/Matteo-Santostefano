@@ -376,7 +376,24 @@ def query(coordi, photo_filters, CCD_structure, exposure_time):
             data[2].append(tot)
     return data, center
 
-
+def sky_brightness(plate_scale, x_pix, y_pix, photo_filters, exposure_time, moon_phase=0):
+    
+    log.info(hist())
+    '''
+    moon_phase = int, optional
+        moon_phase can go to 0 (new moon) to 3 (full moon) with intermedian phases 1 (7 day from new moon) and 2 (10 day from new moon)
+    '''
+    sub = DATA["Sky_brightness"]
+    sky_brightness = [sub[k] for k in photo_filters if k in sub]
+    x_arcsec = plate_scale * x_pix
+    y_arcsec = plate_scale * y_pix
+    Area = x_arcsec * y_arcsec
+    magnitudo_ab_sky = sky_brightness[moon_phase] - 2.5*np.log10(Area)
+    photons = magnitudo_to_photons(magnitudo_ab_sky, photo_filters)
+    electrons = photons_to_electrons(photons, photo_filters)
+    tot = sum(electrons)*exposure_time
+    tot_per_pixel = tot / (x_pix * y_pix)
+    return int(tot_per_pixel)
 
 def main():
     data = query()
