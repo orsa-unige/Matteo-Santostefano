@@ -115,9 +115,9 @@ def main():
     #Standard data for the noise formation 
     realistic = True
     dark = 1.04
-    sky_counts = 40
     bias_level = 2200
     read_noise_electrons = 12
+    
 
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
     coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
@@ -132,6 +132,8 @@ def main():
     size = CCD.shape
     sky, center = Qm.query(coordinates, photo_filters, CCD_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
 
+    sky_counts = Qm.sky_brightness(C_r, size[0], size[1], photo_filters, exposure_time)
+    
     p_x = sky[0]
     p_y = sky[1] 
     flux = sky[2]
