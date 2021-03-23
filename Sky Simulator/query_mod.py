@@ -8,7 +8,9 @@ import json
 from Logger import hist
 from astropy.logger import log
 
-with open("Antola_data.json") as f:
+#filename = "Antola_data.json"
+filename = "San_Pedro_data.json"
+with open(filename) as f:
     DATA = json.load(f)
 
     
@@ -352,7 +354,7 @@ def query(coordi, photo_filters, CCD_structure, exposure_time):
 
     Stars_number = len(result_table)
     len_filter_list = len(photo_filters)
-    AirMass = 1
+    AirMass = 0.5 #1 simple Antola
     
     log.info(hist(f"Creating {Stars_number} stars:"))
     for i in range(Stars_number):
