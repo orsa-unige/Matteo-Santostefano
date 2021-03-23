@@ -8,7 +8,9 @@
     "CCD": {
 	"CCD_x":30.7,
 	"CCD_y":30.7,
-	"pixels":0.015
+	"pixels":0.015,
+	"gain":1.8,
+	"read_out_electrons":4.8
     },
     "Convertion_table": {
 	"U":0.79,
