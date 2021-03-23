@@ -17,27 +17,32 @@ def load_measure():
 
     Outputs
     -------
+    telescope_structure : list
+        a list that contains the information about the telescope
+        telescope_structure[0] = f_l : int
+            It is the focal length of the telescope in mm            
+        telescope_structure[1] = ape : int
+            It is the aperture of the telescope in mm
+        telescope_structure[2] = obs : int
+            It is the central obstruction of the telescope in mm
+        telescope_structure[3] = wav : float
+            It is the central wavelength of the sensible spectrum of the CCD in mm
 
-    f_l : int
-        It is the focal length of the telescope in mm
+    ccd_structure : array
+        a array that contains the information about the CCD
+        ccd_structure[0] = C_x : float
+            It is the length of the CCD along the x axis in mm
+        ccd_structure[0] = C_y : float
+            It is the length of the CCD along the y axis in mm
+        ccd_structure[0] = pix : float
+            It is the lenght of a single pixel in mm
 
-    ape : int
-        It is the aperture of the telescope in mm
-
-    obs : int
-        It is the central obstruction of the telescope in mm
-
-    wav : float
-        It is the central wavelength of the sensible spectrum of the CCD in mm
-
-    C_x : float
-        It is the length of the CCD along the x axis in mm
-
-    C_y : float
-        It is the length of the CCD along the y axis in mm
-
-    pix : float
-        It is the lenght of a single pixel in mm
+    ccd_data : list
+        a list that cointains information about the errors generated in the CCD
+        ccd_data[0] = gain : float
+            the gain of the CCD
+        ccd_data[1] = read_out_electrons : float
+            the electrons that generate the read out noise
     '''
     log.info(hist())
 
@@ -54,10 +59,13 @@ def load_measure():
     C_x = CCD['CCD_x']
     C_y = CCD['CCD_y']
     pix = CCD['pixels']
+    gain = CCD['gain']
+    read_out_electrons = CCD["read_out_electrons"]
     f.close()
     telescope_structure = (f_l, ape, obs, wav)
     ccd_structure = [C_x, C_y, pix]
-    return telescope_structure, ccd_structure
+    ccd_data = (gain, read_out_electrons)
+    return telescope_structure, ccd_structure, ccd_data
 
 
 def save_fits(data, defocus_distance, center):
@@ -90,7 +98,6 @@ def save_fits(data, defocus_distance, center):
     hdul.scale('int16', bzero=32768)
     hdul.writeto(f'try.fits', overwrite = True)
  
-
     
 def main():
     '''
@@ -111,49 +118,46 @@ def main():
     log.info(hist())
     binning = 2
     photo_filters = ['U', 'B', 'V', 'R', 'I']
-    # photo_filters = ['R']  TO CALIBRATE ON JOHNSON SYSTEM
-    gain = 1.8 #0.8 Antola
+
     exposure_time = 60 #second
     default_defocus = 0.9 #mm
     default_coordinates = "07 59 08.445 +15 24 42.00"
+
+    defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
+    coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
+
+    telescope_structure, ccd_structure, ccd_data = load_measure()
 
     #Standard data for the noise formation 
     realistic = True
     dark = 1.04
     bias_level = 2000
-    read_noise_electrons = 4.8 #12 Antola
-    
+    gain = ccd_data[0]
+    read_noise_electrons = ccd_data[1]
 
-    defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
-    coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
-
-
-    #f_l, ape, obs, wav, C_x, C_y, pix = load_measure()  #load the measure
-    telescope_structure, ccd_structure = load_measure()
     ccd_structure[2] = ccd_structure[2] * binning
-    CCD_res = Tm.plate_scale(ccd_structure[2], telescope_structure[0])  #calculate the resolution of the CCD arcsec/pixel
-    ccd_structure.append(CCD_res)
+    ccd_structure.append(Tm.plate_scale(ccd_structure[2], telescope_structure[0])) #calculate the resolution of the CCD arcsec/pixel
+
     CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], telescope_structure, defocus_distance, True, False) #generates the sample of a star with the right measure
     CCD = Tm.physical_CCD(ccd_structure) #generate the CCD
     size = CCD.shape
-    sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
 
-    sky_counts = Qm.sky_brightness(CCD_res, size[0], size[1], photo_filters, exposure_time)
-    
-    p_x = sky[0]
-    p_y = sky[1] 
-    flux = sky[2]
+    sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
+    sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time)
+
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
-    for i in range(len(p_x)):
-        if p_x[i] >=0 and p_x[i] <=size[0]:
-            if p_y[i] >=0 and p_y[i] <=size[1]:
-                CCD[int(p_x[i]), int(p_y[i])] = (flux[i]*photons_collection_area*gain)*(binning**2)*200
-                #the flux is in ph cm^-2 so it has to be multiplied for the effective area of the aperure in cm^2
+    multiplier = photons_collection_area * gain * binnig**2 * 200 #I don't know where 200 cames from I'm investigating
+                                    #the flux is in ph cm^-2 so it has to be multiplied for the effective area of the aperure in cm^2
+
+    for i in range(len(sky[0])):
+        if sky[0][i] >=0 and sky[0][i] <=size[0]:
+            if sky[1][i] >=0 and sky[1][i] <=size[1]:
+                CCD[int(sky[0][i])][int(sky[1][i])] = sky[2][i] * multiplier
+                
         
     CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
 
     if realistic: 
-
 
         flat = ccd_mod.sensitivity_variations(CCD, vignetting=True, dust=False)
         bias_only = ccd_mod.bias(CCD, bias_level, realistic=True)
@@ -161,8 +165,8 @@ def main():
         dark_only = ccd_mod.dark_current(CCD, dark, exposure_time, gain=gain)
         sky_only = ccd_mod.sky_background(CCD, sky_counts, gain=gain)
         cosmic_rays = ccd_mod.make_cosmic_rays(CCD, np.random.randint(10,30))
-        CCD = bias_only + cosmic_rays + noise_only + dark_only + flat * (sky_only + CCD)
 
+        CCD = bias_only + cosmic_rays + noise_only + dark_only + flat * (sky_only + CCD)
         CCD = ccd_mod.saturation_controll(CCD)
     
     save_fits(CCD, defocus_distance, center) #save the fits
