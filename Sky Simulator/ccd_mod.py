@@ -369,8 +369,8 @@ def sensitivity_variations(image, vignetting=True, dust=True):
         # multiply the sensitivity by it.
         vign_model = Gaussian2D(amplitude=1,
                                 x_mean=shape[0] / 2, y_mean=shape[1] / 2,
-                                x_stddev=2 * shape.max(),
-                                y_stddev=2 * shape.max())
+                                x_stddev=2 * (shape.max()*9/10),
+                                y_stddev=2 * (shape.max()*9/10))
         vign_im = vign_model(x, y)
         sensitivity *= vign_im
 
