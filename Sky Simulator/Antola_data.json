@@ -4,14 +4,13 @@
     	"aperture":800,
 	"obstruction":100,
 	"wavelenght":0.0005,
-	"CCD_x":36,
-	"CCD_y":24.7,
-	"pixels":0.009
     },
     "CCD": {
 	"CCD_x":36,
 	"CCD_y":24.7,
-	"pixels":0.009
+	"pixels":0.009,
+	"gain":0.8,
+	"read_out_electrons":12
     },
     "Convertion_table": {
 	"U":0.79,
