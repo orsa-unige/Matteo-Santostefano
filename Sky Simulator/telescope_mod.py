@@ -229,7 +229,7 @@ def physical_CCD(CCD_structure):
     x, y = np.mgrid[-len_x:len_x,-len_y:len_y]
     r = np.sqrt(x**2+y**2)
     CCD = np.piecewise(r, [r], [0])
-    return CCD, x, y    
+    return CCD    
 
 def sky_background_aperture(focal_lenght, aperture, obstruction, trellis=True, atmosphere=False):
     '''
@@ -350,7 +350,7 @@ def image_processing(image, units, aperture):
 
     return np.abs(image)
 
-def telescope_on_CCD(CCD_resolution, focal_lenght, aperture, obstruction, defocus_distance, wavelenght, trellis=True, atmosphere=False):
+def telescope_on_CCD(CCD_resolution, telescope_structure, defocus_distance, trellis=True, atmosphere=False):
     '''
     This function calls sky_backgroud_aperture, defocus and image_processing to create the sample on the PSF on the CCD
 
@@ -359,22 +359,24 @@ def telescope_on_CCD(CCD_resolution, focal_lenght, aperture, obstruction, defocu
 
     CCD_resolution : float
         The resolution on the CCD in arcsec/pixel
-    
-    focal_lenght : int
-        The focal length of the telescope in mm
 
-    aperture : int
-        The aperture of the telescope in mm
+    telescope_structure : list
+        
+        telescope_structure[0] = focal_lenght : int
+            The focal length of the telescope in mm
 
-    obstruction : int
-        The central obstraction of the telescope in mm
+        telescope_structure[1] = aperture : int
+            The aperture of the telescope in mm
+
+        telescope_structure[2] = obstruction : int
+            The central obstraction of the telescope in mm
+
+        telescope_structure[3] = wavelenght : float
+            The center wavelength in mm
 
     defocus_distance : float
         The distance of the defocus in mm in range(-2.5,2.5)
-
-    wavelenght : float
-        The center wavelength in mm
-
+    
     trellis : bool, optional
         If trellis == True the structure that hold on the obstruction is drawn,
         else the structure is not drawn
@@ -393,7 +395,7 @@ def telescope_on_CCD(CCD_resolution, focal_lenght, aperture, obstruction, defocu
         
     #units =  converter_to_pixel(CCD_resolution, focal_lenght, 1) #convert 1mm on the aperture in pixel on CCD
     units = CCD_resolution//0.12 #empiric value
-    image, r = sky_background_aperture(focal_lenght, aperture, obstruction, trellis, atmosphere) #creates the aperture 
-    image = defocus(image, defocus_distance, r, wavelenght) #creates the image on the screen
-    image = image_processing(image, units, aperture) 
+    image, r = sky_background_aperture(telescope_structure[0], telescope_structure[1], telescope_structure[2], trellis, atmosphere) #creates the aperture 
+    image = defocus(image, defocus_distance, r, telescope_structure[3]) #creates the image on the screen
+    image = image_processing(image, units, telescope_structure[1]) 
     return image
