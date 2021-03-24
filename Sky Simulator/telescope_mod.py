@@ -346,7 +346,7 @@ def image_processing(image, units, aperture):
     image = image[zoom[0]:zoom[1], zoom[0]:zoom[1]]  #takes only the good part
     image = np.repeat(np.repeat(image,units, axis=0), units, axis=1) #Strech the image to fit the CCD scale
     image = ndimage.gaussian_filter(image, sigma=1) #smooth the image # CHECK THIS!!
-    image = np.aps(image)**2  #the intensity is the amplitude squared)    
+    image = np.abs(image)**2  #the intensity is the amplitude squared)    
 
     return image
 
