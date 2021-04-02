@@ -118,9 +118,10 @@ def main():
     log.info(hist())
     binning = 2
     photo_filters = ['U', 'B', 'V', 'R', 'I']
+    photo_filters = ['V','R']
 
     exposure_time = 60 #second
-    default_defocus = 0.9 #mm
+    default_defocus = 0 #mm
     default_coordinates = "07 59 08.445 +15 24 42.00"
 
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
@@ -138,7 +139,7 @@ def main():
     ccd_structure[2] = ccd_structure[2] * binning
     ccd_structure.append(Tm.plate_scale(ccd_structure[2], telescope_structure[0])) #calculate the resolution of the CCD arcsec/pixel
 
-    CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], telescope_structure, defocus_distance, True, False) #generates the sample of a star with the right measure
+    CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], binning, telescope_structure, defocus_distance, True, False) #generates the sample of a star with the right measure
     CCD = Tm.physical_CCD(ccd_structure) #generate the CCD
     size = CCD.shape
 
@@ -146,13 +147,14 @@ def main():
     sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time)
 
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
-    multiplier = photons_collection_area * gain * binning**2 * 200 #I don't know where 200 cames from I'm investigating
+    multiplier = gain * photons_collection_area / (binning**2 *60) #* 200 #I don't know where 200 cames from I'm investigating
                                     #the flux is in ph cm^-2 so it has to be multiplied for the effective area of the aperure in cm^2
 
     for i in range(len(sky[0])):
         if sky[0][i] >=0 and sky[0][i] <=size[0]:
             if sky[1][i] >=0 and sky[1][i] <=size[1]:
                 CCD[int(sky[0][i])][int(sky[1][i])] = sky[2][i] * multiplier
+                print(sky[2][i]*multiplier*np.max(CCD_sample))
                 
         
     CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
@@ -164,9 +166,9 @@ def main():
         noise_only = ccd_mod.read_out_noise(CCD, read_noise_electrons, gain=gain) 
         dark_only = ccd_mod.dark_current(CCD, dark, exposure_time, gain=gain)
         sky_only = ccd_mod.sky_background(CCD, sky_counts, gain=gain)
-        cosmic_rays = ccd_mod.make_cosmic_rays(CCD, np.random.randint(10,30))
+        #cosmic_rays = ccd_mod.make_cosmic_rays(CCD, np.random.randint(10,30))
 
-        CCD = bias_only + cosmic_rays + noise_only + dark_only + flat * (sky_only + CCD)
+        CCD = bias_only + noise_only + dark_only + flat * (sky_only + CCD)
         CCD = ccd_mod.saturation_controll(CCD)
     
     save_fits(CCD, defocus_distance, center) #save the fits
