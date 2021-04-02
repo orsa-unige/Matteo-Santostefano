@@ -345,10 +345,10 @@ def image_processing(image, units, aperture):
     zoom = (aperture*2-40, aperture*2+40) #*4
     image = image[zoom[0]:zoom[1], zoom[0]:zoom[1]]  #takes only the good part
     image = np.repeat(np.repeat(image,units, axis=0), units, axis=1) #Strech the image to fit the CCD scale
-    image = ndimage.gaussian_filter(image, sigma=1) #smooth the image # CHECK THIS!!
-    image = np.abs(image)**2  #the intensity is the amplitude squared)    
+    image = ndimage.gaussian_filter(image, sigma=1) #smooth the image
+    image = image**2  #the intensity is the amplitude squared)    
 
-    return image
+    return np.abs(image)
 
 def telescope_on_CCD(CCD_resolution, telescope_structure, defocus_distance, trellis=True, atmosphere=False):
     '''
