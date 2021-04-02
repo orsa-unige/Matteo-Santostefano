@@ -115,11 +115,12 @@ def VEGA_to_AB(magnitudo, photo_filter):
 
     sub = DATA["Convertion_table"]
     convertion_table = [sub[k] for k in photo_filter if k in sub]
-    for i in range(len(magnitudo)):
+    for i in range(len(magnitudo)-1):
         if magnitudo[i]== 0:
             magnitudo[i]= 40
         else:
             magnitudo[i] = magnitudo[i] - convertion_table[i]
+        magnitudo[i] = magnitudo[i] - convertion_table[i]
     return magnitudo
 
 
@@ -151,11 +152,12 @@ def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
     sub = DATA["Extinction_coefficient"]
     extinction_coefficient = [sub[k] for k in photo_filter if k in sub]
     
-    for i in range(len(magnitudo)):
-        if magnitudo[i] == 0:
-            magnitudo[i] = 0
-        else:
-            magnitudo[i] = magnitudo[i]-AirMass*extinction_coefficient[i]
+    for i in range(len(magnitudo)-1):
+        #if magnitudo[i] == 0:
+         #   magnitudo[i] = 0
+        #else:
+         #   magnitudo[i] = magnitudo[i]-AirMass*extinction_coefficient[i]
+        magnitudo[i] = magnitudo[i]-AirMass*extinction_coefficient[i]
     return magnitudo
 
 
@@ -184,8 +186,8 @@ def magnitudo_to_photons(magnitudo, photo_filter):
     sub = DATA["Central_wavelenght"]
     central_wavelenght = [sub[k] for k in photo_filter if k in sub]
     
-    number = magnitudo
-    for i in range(len(magnitudo)):
+    number = magnitudo   
+    for i in range(len(magnitudo)-1):
         if magnitudo[i] == 0:
             number[i] = 0
         else:
@@ -219,7 +221,7 @@ def photons_to_electrons(photons, photo_filter):
     quantum_efficiency = [sub[k] for k in photo_filter if k in sub]
     
     electrons = photons
-    for i in range(len(photons)):
+    for i in range(len(photons)-1):
         electrons[i] = photons[i]*quantum_efficiency[i]
 
     return electrons
@@ -354,7 +356,7 @@ def query(coordi, photo_filters, CCD_structure, exposure_time):
 
     Stars_number = len(result_table)
     len_filter_list = len(photo_filters)
-    AirMass = 0.5 #1 simple Antola
+    AirMass = 1 #simple Antola
     
     log.info(hist(f"Creating {Stars_number} stars:"))
     for i in range(Stars_number):
@@ -390,7 +392,9 @@ def sky_brightness(plate_scale, x_pix, y_pix, photo_filters, exposure_time, moon
     x_arcsec = plate_scale * x_pix
     y_arcsec = plate_scale * y_pix
     Area = x_arcsec * y_arcsec
-    magnitudo_ab_sky = sky_brightness[moon_phase] - 2.5*np.log10(Area)
+    magnitudo_ab_sky = []
+    magnitudo_ab_sky.append(sky_brightness[0][moon_phase] - 2.5*np.log10(Area))
+    #magnitudo_ab_sky.append(0)
     photons = magnitudo_to_photons(magnitudo_ab_sky, photo_filters)
     electrons = photons_to_electrons(photons, photo_filters)
     tot = sum(electrons)*exposure_time
