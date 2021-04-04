@@ -188,7 +188,7 @@ def telescope(focal_lenght, aperture, obstruction, trellis=True):
     '''
     log.info(hist())
 
-    x,y = np.mgrid[-aperture*2:aperture*2, -aperture*2:aperture*2] # creates the 2D grid for the 2D function *4
+    x,y = np.mgrid[-aperture/2:aperture/2, -aperture/2:aperture/2] # creates the 2D grid for the 2D function *4
     r = np.sqrt(x**2+y**2)
     pupil = np.piecewise(r, [r < aperture/2, r > aperture/2, r < obstruction/2], [1, 0, 0]) #creates the aperture
     if trellis:
@@ -316,7 +316,7 @@ def defocus(pupil, defocus_distance, r, wavelenght):
     image = np.abs(defocusPSFA)
     return image
 
-def image_processing(image, units, aperture):
+def image_processing(image, m, aperture):
     '''
     This function takes an image and some parameters to obtain the same image cut and strechetd to fit the CCD.
     Also, this function takes only the essentioal information thus reducing the total weight of the final image 
@@ -327,8 +327,8 @@ def image_processing(image, units, aperture):
     image : numpy ndarray
         The image, usually the PSF
 
-    units : float
-        The convertion coefficient to a pixel on the aperture plane to the CCD
+    m : int
+        The binnig, used to re-sum the PSF pixels
 
     aperture : int
         The aperture of the telescope in mm
@@ -339,18 +339,32 @@ def image_processing(image, units, aperture):
     np.abs(image) : numpy ndarray
         The image cleaned with only the good parts and with the right measure
     '''
-
     log.info(hist())
-    image = image/(np.sum(image)) #normalize
-    zoom = (aperture*2-40, aperture*2+40) #*4
-    image = image[zoom[0]:zoom[1], zoom[0]:zoom[1]]  #takes only the good part
-    image = np.repeat(np.repeat(image,units, axis=0), units, axis=1) #Strech the image to fit the CCD scale
-    image = ndimage.gaussian_filter(image, sigma=1) #smooth the image
-    image = image**2  #the intensity is the amplitude squared)    
+    image = (np.abs(image))**2
+    size = image.shape
+    new_size = (size[0]//m, size[1]//m)
+    new_image = np.zeros(new_size)
+    if m==1:
+        new_image = image
+    elif m==2 or m==3 or m==4:
+        for i in range(new_size[0]):
+            for j in range(new_size[1]):
+                new_image[[i],[j]] = sum_image(image, i, j, m)    
+    else:
+        print('binning problem, PSF binnig ignored')
+        new_image = image
+    new_image = new_image/(np.sum(new_image))
+    return new_image  
 
-    return np.abs(image)
+def sum_image(image, i, j, m):
+    sum_image = 0
+    for k in range(m):
+        for w in range(m):
+            sum_image += image[[m*i+k],[m*j+w]]
+    return sum_image
 
-def telescope_on_CCD(CCD_resolution, telescope_structure, defocus_distance, trellis=True, atmosphere=False):
+
+def telescope_on_CCD(CCD_resolution, binning, telescope_structure, defocus_distance, trellis=True, atmosphere=False):
     '''
     This function calls sky_backgroud_aperture, defocus and image_processing to create the sample on the PSF on the CCD
 
@@ -397,5 +411,5 @@ def telescope_on_CCD(CCD_resolution, telescope_structure, defocus_distance, trel
     units = CCD_resolution//0.12 #empiric value
     image, r = sky_background_aperture(telescope_structure[0], telescope_structure[1], telescope_structure[2], trellis, atmosphere) #creates the aperture 
     image = defocus(image, defocus_distance, r, telescope_structure[3]) #creates the image on the screen
-    image = image_processing(image, units, telescope_structure[1]) 
+    image = image_processing(image, binning, telescope_structure[1]) 
     return image
