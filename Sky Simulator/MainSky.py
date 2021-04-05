@@ -120,13 +120,15 @@ def main():
     photo_filters = ['U', 'B', 'V', 'R', 'I']
     photo_filters = ['V','R']
 
-    exposure_time = 60 #second
+    default_exposure_time = 60 #second
     default_defocus = 0 #mm
     default_coordinates = "07 59 08.445 +15 24 42.00"
 
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
     coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
+    exposure_time = float(input(f'Exposure time? Default {default_exposure_time} \n') or default_exposure_time)  #second
 
+    
     telescope_structure, ccd_structure, ccd_data = load_measure()
 
     #Standard data for the noise formation 
