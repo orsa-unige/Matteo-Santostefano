@@ -118,7 +118,7 @@ def main():
     log.info(hist())
     binning = 2
     photo_filters = ['U', 'B', 'V', 'R', 'I']
-    photo_filters = ['V','R']
+    photo_filters = ['V']
 
     default_exposure_time = 60 #second
     default_defocus = 0 #mm
@@ -149,7 +149,7 @@ def main():
     sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time)
 
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
-    multiplier = gain * photons_collection_area / (binning**2 *60) #* 200 #I don't know where 200 cames from I'm investigating
+    multiplier = gain * photons_collection_area / (binning**2) #* 200 #I don't know where 200 cames from I'm investigating
                                     #the flux is in ph cm^-2 so it has to be multiplied for the effective area of the aperure in cm^2
 
     for i in range(len(sky[0])):
