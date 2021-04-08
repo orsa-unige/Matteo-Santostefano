@@ -7,10 +7,10 @@ from aotools.turbulence.infinitephasescreen import PhaseScreenKolmogorov
 from Logger import hist
 from astropy.logger import log
 
-scale = 10 #data for the atmospheric turbolence
+scale = 1 #data for the atmospheric turbolence
 D = 8
 r0 = 0.164 #(tipycally between 0.10 and 0.20)
-L0 = 100
+L0 = 25
 modes = 10
 
 def phase_aberration(aperture, scale, D, r0, L0, pupil):
@@ -49,7 +49,6 @@ def phase_aberration(aperture, scale, D, r0, L0, pupil):
     '''
 
     log.info(hist())
-        
     nx_size= aperture//scale
     plx_scale = D/nx_size
     phase_screen = PhaseScreenKolmogorov(nx_size, plx_scale, r0, L0)
@@ -270,15 +269,17 @@ def sky_background_aperture(focal_lenght, aperture, obstruction, trellis=True, a
     pupil, r = telescope(focal_lenght, aperture, obstruction, trellis)
 
     if atmosphere:
-        zer = intensity_aberration(aperture, scale, modes, pupil)
-        zernike = zer[0]
+        #zer = intensity_aberration(aperture, scale, modes, pupil)
+        #zernike = zer[0]
 
-        for i in range(modes-1):
-            a = np.random.random()
-            zernike += (a/5)*zer[i]
+        #for i in range(modes-1):
+        #    a = np.random.random()
+        #    zernike += (a/5)*zer[i]
 
-        #phase = phase_aberration(aperture, scale, D, r0, L0, pupil) #Small aperture, long exposure, the kolmogorov turbulance on small scale are no
-        kernel = pupil * zernike
+        phase = phase_aberration(aperture, scale, D, r0, L0, pupil) #Small aperture, long exposure, the kolmogorov turbulance on small scale are no
+        #phase = np.sqrt(np.abs(phase))**2
+        
+        kernel = pupil * phase
         pupil = pupil * np.exp(1j*kernel+0j)
     return pupil, r
 
@@ -316,7 +317,7 @@ def defocus(pupil, defocus_distance, r, wavelenght):
     image = np.abs(defocusPSFA)
     return image
 
-def image_processing(image, m, aperture):
+def image_processing(image, m, aperture, atmosphere):
     '''
     This function takes an image and some parameters to obtain the same image cut and strechetd to fit the CCD.
     Also, this function takes only the essentioal information thus reducing the total weight of the final image 
@@ -333,27 +334,33 @@ def image_processing(image, m, aperture):
     aperture : int
         The aperture of the telescope in mm
 
+    atmosphere : bool
+        To the long exposure 
+
     Output
     ------
 
-    np.abs(image) : numpy ndarray
+    new_image : numpy ndarray
         The image cleaned with only the good parts and with the right measure
     '''
     log.info(hist())
     image = (np.abs(image))**2
     size = image.shape
+    if atmosphere:
+        m = m*2
     new_size = (size[0]//m, size[1]//m)
     new_image = np.zeros(new_size)
+    
     if m==1:
         new_image = image
-    elif m==2 or m==3 or m==4:
+    elif m>=2:
         for i in range(new_size[0]):
             for j in range(new_size[1]):
                 new_image[[i],[j]] = sum_image(image, i, j, m)    
     else:
         print('binning problem, PSF binnig ignored')
         new_image = image
-    new_image = new_image/(np.sum(new_image))
+    new_image = (new_image/(np.sum(new_image)))*0.2
     return new_image  
 
 def sum_image(image, i, j, m):
@@ -411,5 +418,5 @@ def telescope_on_CCD(CCD_resolution, binning, telescope_structure, defocus_dista
     units = CCD_resolution//0.12 #empiric value
     image, r = sky_background_aperture(telescope_structure[0], telescope_structure[1], telescope_structure[2], trellis, atmosphere) #creates the aperture 
     image = defocus(image, defocus_distance, r, telescope_structure[3]) #creates the image on the screen
-    image = image_processing(image, binning, telescope_structure[1]) 
+    image = image_processing(image, binning, telescope_structure[1], atmosphere) 
     return image

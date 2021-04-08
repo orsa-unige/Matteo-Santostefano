@@ -117,17 +117,18 @@ def main():
     '''
     log.info(hist())
     binning = 2
-    photo_filters = ['U', 'B', 'V', 'R', 'I']
+    #photo_filters = ['U', 'B', 'V', 'R', 'I']
     photo_filters = ['V']
 
     default_exposure_time = 60 #second
     default_defocus = 0 #mm
     default_coordinates = "07 59 08.445 +15 24 42.00"
+    default_atmosphere = False
 
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
     coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
     exposure_time = float(input(f'Exposure time? Default {default_exposure_time} \n') or default_exposure_time)  #second
-
+    atmosphere = bool(input(f'Atmosphere? Default {default_atmosphere} \n') or default_atmosphere)
     
     telescope_structure, ccd_structure, ccd_data = load_measure()
 
@@ -141,7 +142,7 @@ def main():
     ccd_structure[2] = ccd_structure[2] * binning
     ccd_structure.append(Tm.plate_scale(ccd_structure[2], telescope_structure[0])) #calculate the resolution of the CCD arcsec/pixel
 
-    CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], binning, telescope_structure, defocus_distance, True, False) #generates the sample of a star with the right measure
+    CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], binning, telescope_structure, defocus_distance, True, atmosphere) #generates the sample of a star with the right measure
     CCD = Tm.physical_CCD(ccd_structure) #generate the CCD
     size = CCD.shape
 
@@ -149,7 +150,7 @@ def main():
     sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time)
 
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
-    multiplier = gain * photons_collection_area / (binning**2) #* 200 #I don't know where 200 cames from I'm investigating
+    multiplier = gain * photons_collection_area *0.05 #* 200 #I don't know where 200 cames from I'm investigating
                                     #the flux is in ph cm^-2 so it has to be multiplied for the effective area of the aperure in cm^2
 
     for i in range(len(sky[0])):
