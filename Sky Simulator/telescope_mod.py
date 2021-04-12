@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from scipy import fft, signal, ndimage
 from aotools import zernikeArray as ZA
 from aotools.turbulence.infinitephasescreen import PhaseScreenKolmogorov
+from astropy.modeling.models import Gaussian2D
+import random
+import math
 
 from Logger import hist
 from astropy.logger import log
@@ -347,7 +350,7 @@ def image_processing(image, m, aperture, atmosphere):
     image = (np.abs(image))**2
     size = image.shape
     if atmosphere:
-        m = m*2
+        m = m*4
     new_size = (size[0]//m, size[1]//m)
     new_image = np.zeros(new_size)
     
@@ -364,13 +367,154 @@ def image_processing(image, m, aperture, atmosphere):
     return new_image  
 
 def sum_image(image, i, j, m):
+    '''
+    This fuction sum the values of an image, it is used to bin
+
+    Parameters
+    ----------
+
+    image : numpy ndarray
+        The image to bin
+
+    i : int
+        the i-th column of the image, with j it is used to select a pixel on the image
+
+    j : int
+        the j_th row of the image
+
+    m : int
+        the binning
+
+    Output
+    ------
+
+    sum_image : float
+        the value of the sum of the pixels
+    '''
     sum_image = 0
     for k in range(m):
         for w in range(m):
             sum_image += image[[m*i+k],[m*j+w]]
     return sum_image
 
+def seeing(seeing):
+    '''
+    This function creates a gaussian image to simulate the seeing due to the atmosphere
 
+    Parameters
+    ----------
+
+    seeing : float
+        the seeing on the pixels of the CCD
+
+    Output
+    ------
+
+    gaussian : numpy ndarray
+        the image of the seeing
+
+    '''
+    x,y = np.mgrid[-500:500, -500:500]
+    intensity = 0.2
+    sigma = seeing/2
+    gaussian = Gaussian2D(intensity, 0, 0, sigma, sigma)(x,y)
+    return gaussian
+
+def speckle(seeing, tot, N):
+    '''
+    This function creates an speckle image where the singles speckles are approximated by gaussians
+
+    Parameter
+    ---------
+
+    seeing : float
+        the seeing on the CCD, it is used to creates the sigma of the gaussians with a normal distribution
+
+    tot : int
+        the intensity of the single image
+
+    N : int
+        the number of speckle, thus the number of the gaussian to be generated
+
+    Outputs
+    -------
+
+    data : numpy ndarray
+        the simulated image of the speckles
+
+    '''
+    
+    x, y = np.mgrid[-500:500,-500:500]
+    intensity = randomizer(N, tot)
+    x_0 = np.random.normal(0, seeing/2, N)
+    y_0 = np.random.normal(0, seeing/2, N)
+    sigma = np.random.normal(0, seeing/2, N)
+    data = Gaussian2D(0, 20, 20, 3, 3)(x,y)
+    if tot == 0:
+        return data
+    else:
+        for i in range(N):
+            data += Gaussian2D(intensity[i], x_0[i], y_0[i], sigma[i], sigma[i])(x,y)
+        data = data/tot
+    return data
+
+
+def randomizer(N, tot):
+    '''
+    This function creates a array with the sum of the elemets fixed but the single entry is random
+
+    Parameters
+    ----------
+
+    N : int
+        the length of the array
+
+    tot : int
+        the sum of the elemets of the array
+
+    Output
+    ------
+
+    result : numpy array
+
+    '''
+    rand_n = [ random.random() for i in range(N) ]
+    result = [ math.floor(i * tot / sum(rand_n)) for i in rand_n ]  
+    for i in range(tot - sum(result)): 
+        result[random.randint(0,N-1)] += 1
+    return result
+
+        
+    
+
+def main_spekle(number_of_speckle, seeing):
+    '''
+    This function call speckle to creates an image made of the sum of gaussians that mimic the speckles
+
+    Parameters
+    ----------
+
+    number_of_speckle : int
+        the number of speckle images to sum
+
+    seeing : float
+        the seeing on the CCD, it is used to creates the sigma of the gaussian
+
+    Output
+    ------
+
+    image : numpy ndarray
+        an image formed by the sum of multiple speckle images 
+
+    '''
+    number_of_gaussian = np.random.randint(3, 10, number_of_speckle)
+    image = speckle(3, 0, 1)
+    for i in range(number_of_speckle):
+        print(i+1)
+        image += speckle(seeing, 100, number_of_gaussian[i])
+    #save_fits(image)
+    return image
+    
 def telescope_on_CCD(CCD_resolution, binning, telescope_structure, defocus_distance, trellis=True, atmosphere=False):
     '''
     This function calls sky_backgroud_aperture, defocus and image_processing to create the sample on the PSF on the CCD
