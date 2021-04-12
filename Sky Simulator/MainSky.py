@@ -97,8 +97,7 @@ def save_fits(data, defocus_distance, center):
     hdr['DEFOCUS'] = (defocus_distance, "[mm] Distance from focal plane")
     hdul.scale('int16', bzero=32768)
     hdul.writeto(f'try.fits', overwrite = True)
- 
-    
+
 def main():
     '''
     This is the main function of the system, it coordinates the Telescope_mod, the ccd_mod and the Query_mod.
@@ -120,47 +119,66 @@ def main():
     #photo_filters = ['U', 'B', 'V', 'R', 'I']
     photo_filters = ['V']
 
-    default_exposure_time = 60 #second
-    default_defocus = 0 #mm
+    exposure_time = 60 #second
+    default_defocus = 0.9 #mm
     default_coordinates = "07 59 08.445 +15 24 42.00"
-    default_atmosphere = False
+    default_seeing = 3
 
+    choose = int(input('do you want Kolmogorov (1), spekle method(2) or gaussian approximation(3)? \n'))
     defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
     coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
-    exposure_time = float(input(f'Exposure time? Default {default_exposure_time} \n') or default_exposure_time)  #second
-    atmosphere = bool(input(f'Atmosphere? Default {default_atmosphere} \n') or default_atmosphere)
-    
+    seeing = float(input(f'The seeing? [arcsec] Default: {default_seeing} \n') or default_seeing) 
+
     telescope_structure, ccd_structure, ccd_data = load_measure()
 
     #Standard data for the noise formation 
     realistic = True
     dark = 1.04
     bias_level = 2000
+    
     gain = ccd_data[0]
     read_noise_electrons = ccd_data[1]
 
     ccd_structure[2] = ccd_structure[2] * binning
     ccd_structure.append(Tm.plate_scale(ccd_structure[2], telescope_structure[0])) #calculate the resolution of the CCD arcsec/pixel
 
-    CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], binning, telescope_structure, defocus_distance, True, atmosphere) #generates the sample of a star with the right measure
+    if choose == 1:
+        CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], binning, telescope_structure, defocus_distance, True, True)
+    else:
+        CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], binning, telescope_structure, defocus_distance, True, False) #generates the sample of a star with the right measure
+
     CCD = Tm.physical_CCD(ccd_structure) #generate the CCD
     size = CCD.shape
+
+    if choose == 2:
+        CCD_seeing = seeing/(ccd_structure[3]*2)
+        number_of_spekle = 100 * exposure_time
+        seeing_image = Tm.main_spekle(number_of_spekle, CCD_seeing)
+        seeing_image = seeing_image/number_of_spekle
+    elif choose == 3:
+        CCD_seeing = seeing/(ccd_structure[3])
+        seeing_image = Tm.seeing(CCD_seeing)
 
     sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
     sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time)
 
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
-    multiplier = gain * photons_collection_area *0.05 #* 200 #I don't know where 200 cames from I'm investigating
+
+    if choose == 1:
+        multiplier = 2 * gain * photons_collection_area *0.05
+    else:
+        multiplier = 1 * gain * photons_collection_area *0.05 #photons_collection_area * gain * binning**2 #* 200 #I don't know where 200 cames from I'm investigating
                                     #the flux is in ph cm^-2 so it has to be multiplied for the effective area of the aperure in cm^2
 
     for i in range(len(sky[0])):
         if sky[0][i] >=0 and sky[0][i] <=size[0]:
             if sky[1][i] >=0 and sky[1][i] <=size[1]:
                 CCD[int(sky[0][i])][int(sky[1][i])] = sky[2][i] * multiplier
-                print(sky[2][i]*multiplier*np.max(CCD_sample))
-                
-        
-    CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
+
+    if choose == 2 or choose == 3:
+                CCD = signal.fftconvolve(CCD, seeing_image, mode='same')       
+
+    CCD = signal.fftconvolve(CCD, CCD_sample, mode='full')  #convolve the position with the sample
 
     if realistic: 
 
@@ -175,6 +193,7 @@ def main():
         CCD = ccd_mod.saturation_controll(CCD)
     
     save_fits(CCD, defocus_distance, center) #save the fits
+    
 
 if __name__ == '__main__':
     main()
