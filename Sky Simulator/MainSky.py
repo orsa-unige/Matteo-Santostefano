@@ -68,7 +68,7 @@ def load_measure():
     return telescope_structure, ccd_structure, ccd_data
 
 
-def save_fits(data, defocus_distance, center):
+def save_fits(data, defocus_distance, center, choose):
     '''
     Save a fits with a simple header.
 
@@ -83,10 +83,15 @@ def save_fits(data, defocus_distance, center):
 
     center : tuple, array
         Invormation about the coordinate to insert in the header
+
+    choose : int
+        is a variable that determines the star used
     
     '''
     log.info(hist())
-    
+ 
+    name = ['Kolmogorov', 'Speckle_Sum', 'Simple_seeing']
+    choose = choose-1
     hdul = fits.PrimaryHDU(data) #save the file
     hdr = hdul.header
     hdr['RA'] = (center[0], "Right Ascension in decimal hours" )
@@ -96,7 +101,7 @@ def save_fits(data, defocus_distance, center):
     hdr['BZERO'] = 32768
     hdr['DEFOCUS'] = (defocus_distance, "[mm] Distance from focal plane")
     hdul.scale('int16', bzero=32768)
-    hdul.writeto(f'try.fits', overwrite = True)
+    hdul.writeto(f'try_{name[choose]}.fits', overwrite = True)
 
 def main():
     '''
@@ -156,7 +161,7 @@ def main():
         seeing_image = Tm.main_spekle(number_of_spekle, CCD_seeing)
         seeing_image = seeing_image/number_of_spekle
     elif choose == 3:
-        CCD_seeing = seeing/(ccd_structure[3])
+        CCD_seeing = seeing/(ccd_structure[3]*2)
         seeing_image = Tm.seeing(CCD_seeing)
 
     sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
@@ -192,7 +197,7 @@ def main():
         CCD = bias_only + noise_only + dark_only + flat * (sky_only + CCD)
         CCD = ccd_mod.saturation_controll(CCD)
     
-    save_fits(CCD, defocus_distance, center) #save the fits
+    save_fits(CCD, defocus_distance, center, choose) #save the fits
     
 
 if __name__ == '__main__':
