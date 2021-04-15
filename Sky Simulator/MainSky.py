@@ -120,19 +120,22 @@ def main():
     the backround noise and the flat frame and then combines all the frames to obtain a more realistic image on the CCD.    
     '''
     log.info(hist())
+
     binning = 2
     #photo_filters = ['U', 'B', 'V', 'R', 'I']
     photo_filters = ['V']
-
-    exposure_time = 60 #second
-    default_defocus = 0.9 #mm
+    
     default_coordinates = "07 59 08.445 +15 24 42.00"
+    default_defocus = 0.9 #mm
+    default_exptime = 60
     default_seeing = 3
-
-    choose = int(input('do you want Kolmogorov (1), spekle method(2) or gaussian approximation(3)? \n'))
-    defocus_distance = float(input(f'The defocus distance? [mm] Default: {default_defocus} \n') or default_defocus) #mm
-    coordinates = input(f'Coordinates? Default: {default_coordinates} \n') or default_coordinates
-    seeing = float(input(f'The seeing? [arcsec] Default: {default_seeing} \n') or default_seeing) 
+    default_method = 3 # gaussian approx
+    
+    coordinates = input(f'Coordinates. Default: {default_coordinates}. ') or default_coordinates
+    defocus_distance = float(input(f'Defocus distance [mm]. Default: {default_defocus}. ') or default_defocus)
+    exposure_time = float(input(f'Exptime [s]. Default: {default_exptime}. ') or default_exptime) 
+    seeing = float(input(f'Seeing [arcsec]. Default: {default_seeing}. ') or default_seeing) 
+    choose = int(input(f'Method. Kolmogorov (1), spekles (2), gaussian approximation(3). Default: {default_method}. ') or default_method)
 
     telescope_structure, ccd_structure, ccd_data = load_measure()
 
