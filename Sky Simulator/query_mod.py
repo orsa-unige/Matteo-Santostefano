@@ -1,4 +1,5 @@
 from astroquery.simbad import Simbad
+from astroquery.gaia import Gaia
 import astropy.coordinates as coord
 from astropy import wcs
 from astropy import units as u
@@ -14,7 +15,7 @@ with open(filename) as f:
     DATA = json.load(f)
 
     
-def Coordinator(coord, center, CCD_structure):
+def Coordinator(coord, center, CCD_structure, catalog):
     '''
     The function takes the coordinates of a star and uses the WCS keywords
     to give back the position on the CCD in pixel
@@ -43,16 +44,26 @@ def Coordinator(coord, center, CCD_structure):
     '''
 
     log.info(hist())
-    
-    offset_x = CCD_structure[0]/CCD_structure[2]
-    offset_y = CCD_structure[1]/CCD_structure[2]
-    w = wcs.WCS(naxis=2)
-    w.wcs.crpix = [1, 1]
-    w.wcs.crval = [center[0], center[1]]
-    w.wcs.ctype = ["RA", "DEC"]    
-    x,y = wcs.utils.skycoord_to_pixel(coord, w)
-    x = ((x*3600)/CCD_structure[3]) + offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
-    y = ((y*3600)/CCD_structure[3]) + offset_y/2
+    if catalog == 'Simbad':
+        offset_x = CCD_structure[0]/CCD_structure[2]
+        offset_y = CCD_structure[1]/CCD_structure[2]
+        w = wcs.WCS(naxis=2)
+        w.wcs.crpix = [1, 1]
+        w.wcs.crval = [center[0], center[1]]
+        w.wcs.ctype = ["RA", "DEC"]    
+        x,y = wcs.utils.skycoord_to_pixel(coord, w)
+        x = ((x*3600)/CCD_structure[3]) + offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
+        y = ((y*3600)/CCD_structure[3]) + offset_y/2
+    elif catalog == 'Gaia':
+        offset_x = CCD_structure[0]/CCD_structure[2]
+        offset_y = CCD_structure[1]/CCD_structure[2]
+        w = wcs.WCS(naxis=2)
+        w.wcs.crpix = [1, 1]
+        w.wcs.crval = [center[0], center[1]]
+        w.wcs.ctype = ["RA", "DEC"]    
+        x,y = wcs.utils.skycoord_to_pixel(coord, w)
+        x = ((x*3600)/CCD_structure[3])*2.6 + offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
+        y = -((y*3600)/CCD_structure[3])*2.6 + offset_y/2
 
     return y, x
 
@@ -124,7 +135,7 @@ def atmospheric_attenuation(magnitudo, photo_filter, AirMass):
          #   magnitudo[i] = 0
         #else:
          #   magnitudo[i] = magnitudo[i]-AirMass*extinction_coefficient[i]
-        magnitudo[i] = magnitudo[i]-AirMass*extinction_coefficient[i]
+        magnitudo[i] = magnitudo[i]+AirMass*extinction_coefficient[i]
     return magnitudo
 
 
@@ -279,7 +290,7 @@ def magnitudo_to_electrons(magnitudo, photo_filters, AirMass, exposure_time, Con
     return tot
 
 
-def query(coordi, photo_filters, CCD_structure, exposure_time):
+def query(coordi, photo_filters, CCD_structure, exposure_time, catalog):
     '''
     This funtion uses all the functions above to query Simbad and extract the information about the stars in a
     specific area of the sky
@@ -319,54 +330,75 @@ def query(coordi, photo_filters, CCD_structure, exposure_time):
     radius = radius_sky_portion(CCD_structure)
     coordi = coord.SkyCoord(coordi, frame = 'icrs', unit=(u.hourangle, u.deg))
 
-    Controll_V = False
-
-    for n, i in enumerate(photo_filters):
-        if i == "g":
-            photo_filters[n] = "V"
-
-    photo_filters_temp = photo_filters
-    
-    if "V" in photo_filters_temp:
-        photo_filters_temp.append("g")
-        Controll_V = True
-
-    #TODO DISCRIMINATOR FOR V AND G AND WARNING
-    f =['flux({0})'.format(x) for x in photo_filters_temp]
-    [Simbad.add_votable_fields(g) for g in f]
-    result_table = Simbad.query_region(coordi, radius)
-    
     center = [0,0]
     center[0] = coordi.ra.degree
     center[1] = coordi.dec.degree
-
     data = Data_structure()
-
-    Stars_number = len(result_table)
-    len_filter_list = len(photo_filters_temp)
     AirMass = 1 #simple Antola
-    if Controll_V:
-        log.warning('If filter V is not available, g filter will be used instead')
-    log.info(hist(f"Creating {Stars_number} stars:"))
-    for i in range(Stars_number):
 
-        log.info(f"Star n° {i+1}/{Stars_number}")
-        row = result_table[i]
-        tot = 0
-        magnitudo = []
-        for j in range(11, 11+len_filter_list):  #controll
-            if row[j] is np.ma.masked:
-                row[j] = 0
-            magnitudo.append(row[j])
-        
-        tot = magnitudo_to_electrons(magnitudo, photo_filters_temp, AirMass, exposure_time, Controll_V)
+    if catalog == 'Simbad':
+        Controll_V = False
+
+        for n, i in enumerate(photo_filters):
+            if i == "g":
+                photo_filters[n] = "V"
+
+        photo_filters_temp = photo_filters
     
-        if tot != 0: #if total flux is 0 the object is not passed
-            c = coord.SkyCoord(row[1], row[2], frame = 'icrs', unit=(u.hourangle, u.deg))##change here
-            x, y = Coordinator(c, center, CCD_structure)
+        if "V" in photo_filters_temp:
+            photo_filters_temp.append("g")
+            Controll_V = True
+
+        f =['flux({0})'.format(x) for x in photo_filters_temp]
+        [Simbad.add_votable_fields(g) for g in f]
+        result_table = Simbad.query_region(coordi, radius)
+
+        Stars_number = len(result_table)
+        len_filter_list = len(photo_filters_temp)
+        
+        if Controll_V:
+            log.warning('If filter V is not available, g filter will be used instead')
+            log.info(hist(f"Creating {Stars_number} stars:"))
+        for i in range(Stars_number):
+
+            log.info(f"Star n° {i+1}/{Stars_number}")
+            row = result_table[i]
+            tot = 0
+            magnitudo = []
+            for j in range(11, 11+len_filter_list):  #controll
+                if row[j] is np.ma.masked:
+                    row[j] = 0
+                magnitudo.append(row[j])
+        
+            tot = magnitudo_to_electrons(magnitudo, photo_filters_temp, AirMass, exposure_time, Controll_V)
+    
+            if tot != 0: #if total flux is 0 the object is not passed
+                c = coord.SkyCoord(row[1], row[2], frame = 'icrs', unit=(u.hourangle, u.deg))##change here
+                x, y = Coordinator(c, center, CCD_structure, catalog)
+                data[0].append(x)
+                data[1].append(y)
+                data[2].append(tot)
+    elif catalog == 'Gaia':
+
+        tables = Gaia.cone_search_async(coordi, radius)
+        tables = tables.get_results()
+        photonis = tables['phot_g_mean_flux'][:]
+        mag = tables['phot_g_mean_mag'][:]
+        pos_ra = tables['ra'][:]
+        pos_dec = tables['dec'][:]
+        number_of_stars = len(photonis)
+        for i in range(number_of_stars):
+            c = coord.SkyCoord(pos_ra[i], pos_dec[i], frame = 'icrs', unit=(u.degree, u.degree))
+            x, y = Coordinator(c, center, CCD_structure, catalog)
+            mag_atm_att = AirMass*0.2   #extinction_coefficient_mean
+            mag[i] = mag[i] + mag_atm_att
+            mag[i] = 10**(6.74-0.4*mag[i]) #here becomes photons
+            quantum_efficiency = 0.3
+            transmissivity = 0.7              
+            multiplier = quantum_efficiency * transmissivity * exposure_time * 4
             data[0].append(x)
             data[1].append(y)
-            data[2].append(tot)
+            data[2].append(mag[i] * multiplier)
     return data, center
 
 def sky_brightness(plate_scale, x_pix, y_pix, photo_filters, exposure_time, moon_phase=0):

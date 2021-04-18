@@ -130,13 +130,20 @@ def main():
     default_exptime = 60
     default_seeing = 3
     default_method = 3 # gaussian approx
+    default_catalog = 1
     
     coordinates = input(f'Coordinates. Default: {default_coordinates}. ') or default_coordinates
     defocus_distance = float(input(f'Defocus distance [mm]. Default: {default_defocus}. ') or default_defocus)
     exposure_time = float(input(f'Exptime [s]. Default: {default_exptime}. ') or default_exptime) 
     seeing = float(input(f'Seeing [arcsec]. Default: {default_seeing}. ') or default_seeing) 
     choose = int(input(f'Method. Kolmogorov (1), spekles (2), gaussian approximation(3). Default: {default_method}. ') or default_method)
-
+    catalogue = int(input(f'Catalog. Gaia(1) or Simbad(2). Default Catalog: {default_catalog}') or default_catalog )
+    if catalogue == 1:
+        catalogue = 'Gaia'
+        log.warning('This catalog uses its own passband, simulated results can be different from the real ones')
+        
+    else:
+        catalogue = 'Simbad'
     telescope_structure, ccd_structure, ccd_data = load_measure()
 
     #Standard data for the noise formation 
@@ -167,7 +174,7 @@ def main():
         CCD_seeing = seeing/(ccd_structure[3]*2)
         seeing_image = Tm.seeing(CCD_seeing)
 
-    sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time) #call a function that gives back positions, fluxs of the stars and a data for the header
+    sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time, catalogue) #call a function that gives back positions, fluxs of the stars and a data for the header
     sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time)
 
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
@@ -186,7 +193,7 @@ def main():
     if choose == 2 or choose == 3:
                 CCD = signal.fftconvolve(CCD, seeing_image, mode='same')       
 
-    CCD = signal.fftconvolve(CCD, CCD_sample, mode='full')  #convolve the position with the sample
+    CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
 
     if realistic: 
 
