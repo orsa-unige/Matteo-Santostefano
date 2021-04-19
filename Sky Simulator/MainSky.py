@@ -126,7 +126,7 @@ def main():
     photo_filters = ['V']
     
     default_coordinates = "07 59 08.445 +15 24 42.00"
-    default_defocus = 0.9 #mm
+    default_defocus = 0.0 #mm
     default_exptime = 60
     default_seeing = 3
     default_method = 3 # gaussian approx
@@ -137,7 +137,7 @@ def main():
     exposure_time = float(input(f'Exptime [s]. Default: {default_exptime}. ') or default_exptime) 
     seeing = float(input(f'Seeing [arcsec]. Default: {default_seeing}. ') or default_seeing) 
     choose = int(input(f'Method. Kolmogorov (1), spekles (2), gaussian approximation(3). Default: {default_method}. ') or default_method)
-    catalogue = int(input(f'Catalog. Gaia(1) or Simbad(2). Default Catalog: {default_catalog}') or default_catalog )
+    catalogue = default_catalog # int(input(f'Catalog. Gaia(1) or Simbad(2). Default Catalog: {default_catalog}') or default_catalog )
     if catalogue == 1:
         catalogue = 'Gaia'
         log.warning('This catalog uses its own passband, simulated results can be different from the real ones')
@@ -149,7 +149,7 @@ def main():
     #Standard data for the noise formation 
     realistic = True
     dark = 1.04
-    bias_level = 2000
+    bias_level = 760 # 2000
     
     gain = ccd_data[0]
     read_noise_electrons = ccd_data[1]
@@ -198,7 +198,7 @@ def main():
     if realistic: 
 
         flat = ccd_mod.sensitivity_variations(CCD, vignetting=True, dust=False)
-        bias_only = ccd_mod.bias(CCD, bias_level, realistic=True)
+        bias_only = ccd_mod.bias(CCD, bias_level, realistic=False)
         noise_only = ccd_mod.read_out_noise(CCD, read_noise_electrons, gain=gain) 
         dark_only = ccd_mod.dark_current(CCD, dark, exposure_time, gain=gain)
         sky_only = ccd_mod.sky_background(CCD, sky_counts, gain=gain)
