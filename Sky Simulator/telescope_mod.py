@@ -6,6 +6,7 @@ from aotools.turbulence.infinitephasescreen import PhaseScreenKolmogorov
 from astropy.modeling.models import Gaussian2D
 import random
 import math
+from scipy.ndimage import rotate
 
 from Logger import hist
 from astropy.logger import log
@@ -194,8 +195,8 @@ def telescope(focal_lenght, aperture, obstruction, trellis=True):
     r = np.sqrt(x**2+y**2)
     pupil = np.piecewise(r, [r < aperture/2, r > aperture/2, r < obstruction/2], [1, 0, 0]) #creates the aperture
     if trellis:
-        structure_x = np.piecewise(x, [x, x>5, x<-5], [0,1,1]) #creates the structure that keep the obstruction
-        structure_y = np.piecewise(y, [y, y>5, y<-5], [0,1,1])
+        structure_x = np.piecewise(x, [x, x>1, x<0], [0,1,1]) #creates the structure that keep the obstruction
+        structure_y = np.piecewise(y, [y, y>1, y<0], [0,1,1])
         pupil = pupil*(structure_x*structure_y)
     return pupil, r
 
@@ -364,6 +365,8 @@ def image_processing(image, m, aperture, atmosphere):
         print('binning problem, PSF binnig ignored')
         new_image = image
     new_image = (new_image/(np.sum(new_image)))*0.2
+
+    new_image = rotate(new_image, angle=45)
     return new_image  
 
 def sum_image(image, i, j, m):
