@@ -62,8 +62,8 @@ def Coordinator(coord, center, CCD_structure, catalog):
         w.wcs.crval = [center[0], center[1]]
         w.wcs.ctype = ["RA", "DEC"]    
         x,y = wcs.utils.skycoord_to_pixel(coord, w)
-        x = ((x*3600)/CCD_structure[3])*2.6 + offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
-        y = -((y*3600)/CCD_structure[3])*2.6 + offset_y/2
+        x = ((x*3600)/CCD_structure[3]) + offset_x/2 #(deg*arc/sec*deg)*arc/sec*pixel+offset
+        y = ((y*3600)/CCD_structure[3]) + offset_y/2
 
     return y, x
 
@@ -379,7 +379,7 @@ def query(coordi, photo_filters, CCD_structure, exposure_time, catalog):
                 data[1].append(y)
                 data[2].append(tot)
     elif catalog == 'Gaia':
-
+        Gaia.ROW_LIMIT = -1
         tables = Gaia.cone_search_async(coordi, radius)
         tables = tables.get_results()
         photonis = tables['phot_g_mean_flux'][:]
@@ -394,8 +394,8 @@ def query(coordi, photo_filters, CCD_structure, exposure_time, catalog):
             mag[i] = mag[i] + mag_atm_att
             mag[i] = 10**(6.74-0.4*mag[i]) #here becomes photons
             quantum_efficiency = 0.3
-            transmissivity = 0.7              
-            multiplier = quantum_efficiency * transmissivity * exposure_time * 4
+            transmissivity = 0.5              
+            multiplier = quantum_efficiency * transmissivity * exposure_time *0.5
             data[0].append(x)
             data[1].append(y)
             data[2].append(mag[i] * multiplier)
@@ -418,7 +418,6 @@ def sky_brightness(plate_scale, x_pix, y_pix, photo_filters, exposure_time, moon
     Area = x_arcsec * y_arcsec
     magnitudo_ab_sky = []
     magnitudo_ab_sky.append(sky_brightness[0][moon_phase] - 2.5*np.log10(Area))
-    #magnitudo_ab_sky.append(0)
     photons = magnitudo_to_photons(magnitudo_ab_sky, photo_filters)
     electrons = photons_to_electrons(photons, photo_filters)
     tot = sum(electrons)*exposure_time
