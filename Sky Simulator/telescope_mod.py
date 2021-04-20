@@ -418,6 +418,7 @@ def seeing(seeing):
 
     '''
     x,y = np.mgrid[-500:500, -500:500]
+    #intensity = -0.2*seeing+1.4
     intensity = 0.4
     sigma = seeing*(4/5)
     gaussian = Gaussian2D(intensity, 0, 0, sigma, sigma)(x,y)
