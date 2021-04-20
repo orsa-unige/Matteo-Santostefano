@@ -149,7 +149,7 @@ def main():
     #Standard data for the noise formation 
     realistic = True
     dark = 1.04
-    bias_level = 760 # 2000
+    bias_level = 0 #760 # 2000
     
     gain = ccd_data[0]
     read_noise_electrons = ccd_data[1]
@@ -175,7 +175,7 @@ def main():
         seeing_image = Tm.seeing(CCD_seeing)
 
     sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time, catalogue) #call a function that gives back positions, fluxs of the stars and a data for the header
-    sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time)
+    sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time, 0)
 
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
 
@@ -195,13 +195,20 @@ def main():
 
     CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
 
+    lines = False
+    dust = False
+    gaussian_vignetting = False
+    
     if realistic: 
 
-        flat = ccd_mod.sensitivity_variations(CCD, vignetting=True, dust=False)
-        bias_only = ccd_mod.bias(CCD, bias_level, realistic=False)
-        noise_only = ccd_mod.read_out_noise(CCD, read_noise_electrons, gain=gain) 
-        dark_only = ccd_mod.dark_current(CCD, dark, exposure_time, gain=gain)
-        sky_only = ccd_mod.sky_background(CCD, sky_counts, gain=gain)
+        flat = ccd_mod.sensitivity_variations(CCD, gaussian_vignetting, dust)
+        if bias_level == 0:
+            bias_only = 0
+        else:
+            bias_only = ccd_mod.bias(CCD, bias_level, lines)
+        noise_only = ccd_mod.read_out_noise(CCD, read_noise_electrons, gain) 
+        dark_only = ccd_mod.dark_current(CCD, dark, exposure_time, gain)
+        sky_only = ccd_mod.sky_background(CCD, sky_counts, gain)
         #cosmic_rays = ccd_mod.make_cosmic_rays(CCD, np.random.randint(10,30))
 
         CCD = bias_only + noise_only + dark_only + flat * (sky_only + CCD)

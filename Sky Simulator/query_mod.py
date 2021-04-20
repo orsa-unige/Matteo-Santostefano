@@ -401,7 +401,7 @@ def query(coordi, photo_filters, CCD_structure, exposure_time, catalog):
             data[2].append(mag[i] * multiplier)
     return data, center
 
-def sky_brightness(plate_scale, x_pix, y_pix, photo_filters, exposure_time, moon_phase=0):
+def sky_brightness(plate_scale, x_pix, y_pix, photo_filters, exposure_time, moon_phase=3):
     
     log.info(hist())
     '''
@@ -421,8 +421,7 @@ def sky_brightness(plate_scale, x_pix, y_pix, photo_filters, exposure_time, moon
     photons = magnitudo_to_photons(magnitudo_ab_sky, photo_filters)
     electrons = photons_to_electrons(photons, photo_filters)
     tot = sum(electrons)*exposure_time
-    tot_per_pixel = tot / (x_pix * y_pix)
-    return int(tot_per_pixel)
+    return tot
 
 def main():
     data = query()

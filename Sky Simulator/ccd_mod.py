@@ -3,7 +3,7 @@ from astropy.modeling.models import Gaussian2D, RickerWavelet2D, Const2D
 from photutils.aperture import EllipticalAperture
 from Logger import hist
 from astropy.logger import log
-
+from scipy import stats
 def bias(image, value, realistic=False):
     '''
     This function creates a matrix with the shape of the CCD with the bias and
@@ -172,9 +172,9 @@ def sky_background(image, sky_count, gain=1):
     sky_image : numpy ndarray
         The image of the CCD with the background generated
     '''
-
-    sky_image = np.random.poisson(sky_count*gain, size= image.shape) / gain
-
+    mean = sky_count*gain
+    sky_image = np.random.poisson(mean*2, size= (image.shape)) / gain
+    #sky_image = stats.poisson.rvs(mean size=image.shape) / gain
     return sky_image
 
 def make_cosmic_rays(image, number, strength=10000):
@@ -367,11 +367,11 @@ def sensitivity_variations(image, vignetting=True, dust=True):
     if vignetting: #TODO, centro gaussiana da spostare
         # Generate very wide gaussian centered on the center of the image,
         # multiply the sensitivity by it.
-        narrowing = np.random.randint(5,10)
+        #narrowing = np.random.randint(5,10)
         vign_model = Gaussian2D(amplitude=1,
                                 x_mean=shape[0] / 2, y_mean=shape[1] / 2,
-                                x_stddev=2 * (shape.max()*narrowing/10),
-                                y_stddev=2 * (shape.max()*narrowing/10))
+                                x_stddev=2 * (shape.max()),
+                                y_stddev=2 * (shape.max()))
         vign_im = vign_model(x, y)
         sensitivity *= vign_im
 
