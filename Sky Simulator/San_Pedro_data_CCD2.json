@@ -3,7 +3,7 @@
         "focal_lenght":12600,
     	"aperture":840,
 	"obstruction":100,
-	"wavelenght":0.0005
+	"wavelenght":0.0006
     },
     "CCD": {
 	"CCD_x":27.6,
