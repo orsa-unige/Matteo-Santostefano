@@ -3,7 +3,7 @@ from astropy.modeling.models import Gaussian2D, RickerWavelet2D, Const2D
 from photutils.aperture import EllipticalAperture
 from Logger import hist
 from astropy.logger import log
-from scipy import stats
+
 def bias(image, value, realistic=False):
     '''
     This function creates a matrix with the shape of the CCD with the bias and
@@ -172,9 +172,9 @@ def sky_background(image, sky_count, gain=1):
     sky_image : numpy ndarray
         The image of the CCD with the background generated
     '''
-    mean = sky_count*gain
-    sky_image = np.random.poisson(mean*2, size= (image.shape)) / gain
-    #sky_image = stats.poisson.rvs(mean size=image.shape) / gain
+    mean = sky_count*gain*2
+    sky_image = np.random.poisson(mean, size= (image.shape)) / gain
+
     return sky_image
 
 def make_cosmic_rays(image, number, strength=10000):
