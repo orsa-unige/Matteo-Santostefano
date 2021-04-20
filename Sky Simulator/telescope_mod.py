@@ -314,7 +314,7 @@ def defocus(pupil, defocus_distance, r, wavelenght):
     '''
     log.info(hist())
         
-    phaseAngle = 1j*defocus_distance*np.sqrt((2*np.pi/wavelenght)**2-r**2+0j) #unnecessary 0j but keeping it for complex reasons
+    phaseAngle = 1j*defocus_distance*10*np.sqrt((2*np.pi/wavelenght)**2-r**2+0j) #unnecessary 0j but keeping it for complex reasons
     kernel = np.exp(phaseAngle)
     defocusPupil = pupil * kernel
     defocusPSFA = fft.fftshift(fft.fft2(defocusPupil))
