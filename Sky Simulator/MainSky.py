@@ -47,7 +47,8 @@ def load_measure():
     log.info(hist())
 
     #filename = "Antola_data.json"
-    filename = "San_Pedro_data.json"
+    #filename = "San_Pedro_data.json"
+    filename = "San_Pedro_data_CCD2.json"
     f = open(filename, "r")
     data = json.load(f)
     Telescope = data['Telescope']
@@ -156,7 +157,6 @@ def main():
 
     ccd_structure[2] = ccd_structure[2] * binning
     ccd_structure.append(Tm.plate_scale(ccd_structure[2], telescope_structure[0])) #calculate the resolution of the CCD arcsec/pixel
-
     if choose == 1:
         CCD_sample = Tm.telescope_on_CCD(ccd_structure[3], binning, telescope_structure, defocus_distance, True, True)
     else:
@@ -175,7 +175,7 @@ def main():
         seeing_image = Tm.seeing(CCD_seeing)
 
     sky, center = Qm.query(coordinates, photo_filters, ccd_structure, exposure_time, catalogue) #call a function that gives back positions, fluxs of the stars and a data for the header
-    sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time, 0)
+    sky_counts = Qm.sky_brightness(ccd_structure[3], size[0], size[1], photo_filters, exposure_time, 3)
 
     photons_collection_area = (np.pi/400)*(telescope_structure[1]**2-telescope_structure[2]**2)
 
@@ -190,10 +190,12 @@ def main():
             if sky[1][i] >=0 and sky[1][i] <=size[1]:
                 CCD[int(sky[0][i])][int(sky[1][i])] = sky[2][i] * multiplier
 
-    if choose == 2 or choose == 3:
-                CCD = signal.fftconvolve(CCD, seeing_image, mode='same')       
+    
 
     CCD = signal.fftconvolve(CCD, CCD_sample, mode='same')  #convolve the position with the sample
+
+    if choose == 2 or choose == 3:
+        CCD = signal.fftconvolve(CCD, seeing_image, mode='same')   
 
     lines = False
     dust = False
